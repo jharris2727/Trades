@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trade Journal</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+:root {
+  --bg:#0a0b0d;--surface:#111318;--surface2:#181c23;--surface3:#1e2330;
+  --border:#252b38;--border2:#2e3547;--text:#d4d9e8;--text-muted:#6b7590;
+  --text-dim:#3d4560;--accent:#4f7cff;--accent-dim:#1a2a5e;
+  --green:#3ecf8e;--green-dim:#0d3d28;--red:#f0566a;--red-dim:#3d0d18;
+  --amber:#f5a623;--amber-dim:#3d2a0a;--purple:#9b6dff;--purple-dim:#2a1a5e;
+  --orange:#ff7043;--orange-dim:#3d1a0a;
+  --tag-bg:#1a1f2e;--tag-hover:#252d42;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:13px;min-height:100vh;}
+.app{display:flex;flex-direction:column;height:100vh;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:52px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;}
+.topbar-brand{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--text-muted);}
+.topbar-brand span{color:var(--accent);}
+.topbar-actions{display:flex;gap:8px;align-items:center;}
+.nav-tabs{display:flex;padding:0 24px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;}
+.nav-tab{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);padding:12px 16px;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;background:none;border-left:none;border-right:none;border-top:none;}
+.nav-tab:hover{color:var(--text);}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.main{flex:1;overflow:hidden;display:flex;}
+.view{display:none;width:100%;height:100%;overflow-y:auto;}
+.view.active{display:flex;}
+.log-view{flex-direction:row;}
+.trade-list{width:300px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;background:var(--surface);display:flex;flex-direction:column;}
+.trade-list-header{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.trade-list-header h3{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);}
+.filter-bar{padding:8px 12px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.filter-bar-label{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;}
+.filter-chips{display:flex;flex-wrap:wrap;gap:4px;}
+.filter-chip{font-family:var(--mono);font-size:9px;padding:3px 7px;border-radius:3px;background:var(--tag-bg);border:1px solid var(--border2);color:var(--text-muted);cursor:pointer;transition:all .12s;}
+.filter-chip:hover{color:var(--text);border-color:var(--text-muted);}
+.filter-chip.active-filter{background:var(--accent-dim);color:var(--accent);border-color:var(--accent);}
+.trade-card{padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;}
+.trade-card:hover{background:var(--surface2);}
+.trade-card.selected{background:var(--surface3);border-left:2px solid var(--accent);}
+.trade-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
+.trade-card-asset{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text);}
+.trade-card-dir{font-family:var(--mono);font-size:10px;font-weight:600;padding:2px 7px;border-radius:3px;letter-spacing:.08em;}
+.dir-long{background:var(--green-dim);color:var(--green);}
+.dir-short{background:var(--red-dim);color:var(--red);}
+.trade-card-meta{font-size:11px;color:var(--text-muted);font-family:var(--mono);}
+.trade-card-tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px;}
+.mini-tag{font-family:var(--mono);font-size:9px;padding:1px 5px;border-radius:2px;background:var(--tag-bg);color:var(--text-muted);}
+.status-badge{font-family:var(--mono);font-size:9px;font-weight:600;padding:2px 6px;border-radius:3px;}
+.badge-pending{background:var(--orange-dim);color:var(--orange);border:1px solid var(--orange);}
+.badge-needs-review{background:var(--amber-dim);color:var(--amber);border:1px solid var(--amber);}
+.detail-panel{flex:1;overflow-y:auto;padding:24px;background:var(--bg);}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-align:center;gap:8px;}
+.empty-state-icon{font-size:32px;margin-bottom:8px;opacity:.3;}
+.form-view{flex-direction:column;overflow-y:auto;padding:24px;}
+.form-grid{max-width:900px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:24px;}
+.form-section{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.form-section-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--surface2);}
+.section-label{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--text-muted);}
+.section-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.dot-blue{background:var(--accent);}.dot-green{background:var(--green);}.dot-red{background:var(--red);}.dot-amber{background:var(--amber);}.dot-purple{background:var(--purple);}
+.form-body{padding:20px;}
+.field-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:14px;}
+.field-row:last-child{margin-bottom:0;}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field.full{grid-column:1/-1;}
+.field-label{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);}
+.field input,.field select,.field textarea{background:var(--surface3);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:12px;padding:8px 10px;outline:none;transition:border-color .15s;width:100%;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);}
+.field textarea{resize:vertical;min-height:72px;font-family:var(--sans);font-size:12px;line-height:1.6;}
+.field select option{background:var(--surface3);}
+.tag-grid{display:flex;flex-wrap:wrap;gap:6px;}
+.tag-btn{font-family:var(--mono);font-size:10px;padding:5px 10px;border-radius:3px;background:var(--tag-bg);color:var(--text-muted);border:1px solid var(--border2);cursor:pointer;transition:all .12s;letter-spacing:.04em;user-select:none;}
+.tag-btn:hover{background:var(--tag-hover);color:var(--text);}
+.tag-btn.selected{background:var(--accent-dim);color:var(--accent);border-color:var(--accent);}
+.tag-btn.selected.green{background:var(--green-dim);color:var(--green);border-color:var(--green);}
+.tag-btn.selected.red{background:var(--red-dim);color:var(--red);border-color:var(--red);}
+.tag-btn.selected.amber{background:var(--amber-dim);color:var(--amber);border-color:var(--amber);}
+.tag-btn.selected.purple{background:var(--purple-dim);color:var(--purple);border-color:var(--purple);}
+.score-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;}
+.score-item{display:flex;flex-direction:column;gap:7px;}
+.score-label{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);display:flex;justify-content:space-between;}
+.score-val{color:var(--text);font-size:11px;}
+.score-track{display:flex;gap:4px;}
+.score-pip{flex:1;height:6px;border-radius:2px;background:var(--border2);cursor:pointer;transition:background .12s;}
+.score-pip.filled{background:var(--accent);}
+.score-pip.filled.c2{background:var(--red);}
+.score-pip.filled.c3{background:var(--amber);}
+.score-pip.filled.c4{background:var(--green);}
+.screenshot-zone{border:1.5px dashed var(--border2);border-radius:5px;padding:18px;display:flex;flex-direction:column;gap:12px;}
+.screenshot-drop{border:1.5px dashed var(--border2);border-radius:4px;padding:20px;text-align:center;cursor:pointer;transition:all .15s;font-family:var(--mono);font-size:10px;color:var(--text-muted);letter-spacing:.08em;position:relative;}
+.screenshot-drop:hover,.screenshot-drop.paste-active{border-color:var(--accent);background:var(--accent-dim);color:var(--accent);}
+.screenshot-drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.screenshot-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;}
+.screenshot-thumb{position:relative;border-radius:4px;overflow:hidden;border:1px solid var(--border2);aspect-ratio:16/9;background:var(--surface2);cursor:pointer;}
+.screenshot-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.screenshot-thumb-label{position:absolute;bottom:0;left:0;right:0;padding:4px 6px;font-family:var(--mono);font-size:9px;background:rgba(0,0,0,.7);color:var(--text-muted);}
+.screenshot-thumb-del{position:absolute;top:4px;right:4px;background:rgba(240,86,106,.85);color:white;border:none;border-radius:2px;font-size:9px;padding:1px 5px;cursor:pointer;opacity:0;transition:opacity .12s;}
+.screenshot-thumb:hover .screenshot-thumb-del{opacity:1;}
+.psych-phases{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.psych-phase{background:var(--surface3);border:1px solid var(--border2);border-radius:5px;overflow:hidden;}
+.psych-phase-header{padding:10px 14px;font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;border-bottom:1px solid var(--border);}
+.phase-before .psych-phase-header{color:var(--amber);border-bottom-color:var(--amber-dim);}
+.phase-during .psych-phase-header{color:var(--accent);border-bottom-color:var(--accent-dim);}
+.phase-after .psych-phase-header{color:var(--purple);border-bottom-color:var(--purple-dim);}
+.psych-phase-body{padding:12px;display:flex;flex-direction:column;gap:10px;}
+.btn{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:9px 18px;border-radius:4px;border:none;cursor:pointer;transition:opacity .15s;}
+.btn:hover{opacity:.85;}
+.btn-primary{background:var(--accent);color:white;}
+.btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border2);}
+.btn-ghost:hover{color:var(--text);border-color:var(--text-muted);}
+.btn-danger{background:var(--red-dim);color:var(--red);border:1px solid var(--red-dim);}
+.btn-sm{padding:5px 10px;font-size:9px;}
+.btn-row{display:flex;gap:8px;justify-content:flex-end;padding-top:8px;}
+.detail-trade-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border);}
+.detail-asset{font-family:var(--mono);font-size:24px;font-weight:600;color:var(--text);}
+.detail-meta{font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-top:4px;}
+.detail-section{margin-bottom:22px;}
+.detail-section-title{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.detail-tags{display:flex;flex-wrap:wrap;gap:5px;}
+.detail-tag{font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:3px;background:var(--tag-bg);color:var(--text-muted);border:1px solid var(--border2);}
+.detail-note{font-family:var(--sans);font-size:13px;line-height:1.7;color:var(--text);}
+.detail-screenshots{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;}
+.detail-ss{border-radius:5px;overflow:hidden;border:1px solid var(--border2);cursor:pointer;}
+.detail-ss img{width:100%;display:block;}
+.detail-ss-label{padding:6px 10px;font-family:var(--mono);font-size:9px;color:var(--text-muted);background:var(--surface2);letter-spacing:.06em;text-transform:uppercase;}
+.psych-read-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.psych-read-block{background:var(--surface2);border-radius:5px;padding:14px;border:1px solid var(--border);}
+.psych-read-phase{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px;}
+.phase-before-label{color:var(--amber);}.phase-during-label{color:var(--accent);}.phase-after-label{color:var(--purple);}
+.detail-scores{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+.detail-score-item{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:10px 12px;}
+.detail-score-name{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;}
+.detail-score-pips{display:flex;gap:3px;}
+.detail-score-pip{flex:1;height:4px;border-radius:2px;background:var(--border2);}
+.detail-score-pip.on{background:var(--accent);}
+.lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:1000;align-items:center;justify-content:center;flex-direction:column;padding:24px;}
+.lightbox.open{display:flex;}
+.lightbox img{max-width:100%;max-height:85vh;border-radius:4px;}
+.lightbox-close{position:absolute;top:20px;right:24px;background:none;border:none;color:var(--text-muted);font-size:22px;cursor:pointer;}
+.review-view{flex-direction:column;padding:24px;gap:20px;}
+.review-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;max-width:1200px;width:100%;margin:0 auto;}
+.review-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px;cursor:pointer;transition:border-color .15s;}
+.review-card:hover{border-color:var(--border2);}
+.review-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.review-card-asset{font-family:var(--mono);font-size:14px;font-weight:600;}
+.review-card-date{font-family:var(--mono);font-size:10px;color:var(--text-muted);}
+.review-card-tags{display:flex;flex-wrap:wrap;gap:4px;}
+.quality-badge{font-family:var(--mono);font-size:10px;font-weight:600;padding:2px 8px;border-radius:3px;}
+.q-aplus{background:rgba(62,207,142,.15);color:var(--green);}
+.q-a{background:rgba(79,124,255,.15);color:var(--accent);}
+.q-b{background:rgba(245,166,35,.15);color:var(--amber);}
+.q-c{background:rgba(240,86,106,.15);color:var(--red);}
+.q-invalid{background:var(--surface3);color:var(--text-dim);}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+.tag-group{margin-bottom:14px;}
+.tag-group:last-child{margin-bottom:0;}
+.tag-group-label{font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-dim);text-transform:uppercase;margin-bottom:6px;}
+.outcome-row{display:flex;gap:8px;}
+.outcome-btn{flex:1;padding:10px 6px;border-radius:4px;border:1.5px solid var(--border2);background:var(--surface3);color:var(--text-muted);font-family:var(--mono);font-size:10px;letter-spacing:.08em;cursor:pointer;text-align:center;transition:all .12s;}
+.outcome-btn:hover{border-color:var(--text-muted);color:var(--text);}
+.outcome-btn.sel-win{background:var(--green-dim);color:var(--green);border-color:var(--green);}
+.outcome-btn.sel-loss{background:var(--red-dim);color:var(--red);border-color:var(--red);}
+.outcome-btn.sel-be{background:var(--amber-dim);color:var(--amber);border-color:var(--amber);}
+.outcome-btn.sel-pending{background:var(--orange-dim);color:var(--orange);border-color:var(--orange);}
+.autosave-dot{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--text-dim);text-transform:uppercase;transition:color .3s;}
+.autosave-dot::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--text-dim);transition:background .3s;}
+.autosave-dot.saved{color:var(--green);}.autosave-dot.saved::before{background:var(--green);}
+.autosave-dot.saving{color:var(--amber);}.autosave-dot.saving::before{background:var(--amber);}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:900;align-items:center;justify-content:center;padding:24px;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--surface);border:1px solid var(--border2);border-radius:8px;width:100%;max-width:700px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;}
+.modal-box.modal-wide{max-width:860px;}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.modal-header h2{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text);}
+.modal-body{flex:1;overflow-y:auto;padding:20px;}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;}
+.tag-editor-category{margin-bottom:20px;}
+.tag-editor-cat-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;cursor:pointer;}
+.tag-editor-cat-label{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);}
+.tag-editor-cat-body{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start;flex-direction:column;}
+.tag-editor-pill{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;padding:4px 8px;border-radius:3px;background:var(--tag-bg);border:1px solid var(--border2);color:var(--text-muted);}
+.tag-editor-pills-row{display:flex;flex-wrap:wrap;gap:6px;}
+.tag-editor-pill-del{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:10px;padding:0;line-height:1;transition:color .12s;}
+.tag-editor-pill-del:hover{color:var(--red);}
+.tag-editor-add{display:inline-flex;align-items:center;gap:5px;margin-top:4px;}
+.tag-editor-add input{background:var(--surface3);border:1px solid var(--border2);border-radius:3px;color:var(--text);font-family:var(--mono);font-size:10px;padding:4px 8px;outline:none;width:160px;transition:border-color .15s;}
+.tag-editor-add input:focus{border-color:var(--accent);}
+.tag-editor-add button{background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);font-family:var(--mono);font-size:9px;padding:4px 8px;border-radius:3px;cursor:pointer;transition:background .12s;}
+.tag-editor-add button:hover{background:var(--accent);color:white;}
+.tag-editor-cat-chevron{font-size:10px;color:var(--text-dim);}
+.tag-editor-cat-body.collapsed{display:none;}
+.cal-view{flex-direction:column;padding:24px;overflow-y:auto;}
+.cal-wrap{max-width:900px;width:100%;margin:0 auto;}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.cal-month-label{font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text);}
+.cal-nav-btn{background:none;border:1px solid var(--border2);color:var(--text-muted);font-family:var(--mono);font-size:11px;padding:6px 14px;border-radius:4px;cursor:pointer;transition:all .12s;}
+.cal-nav-btn:hover{color:var(--text);border-color:var(--text-muted);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-day-label{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);text-align:center;padding:6px 0;}
+.cal-cell{min-height:80px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:6px 7px;cursor:pointer;transition:all .15s;position:relative;}
+.cal-cell:hover{border-color:var(--border2);background:var(--surface2);}
+.cal-cell.today{border-color:var(--accent);}
+.cal-cell.other-month{opacity:.3;}
+.cal-cell.has-trades{background:var(--surface2);}
+.cal-cell-num{font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-bottom:4px;}
+.cal-cell.today .cal-cell-num{color:var(--accent);font-weight:700;}
+.cal-trade-dot{width:100%;background:var(--surface3);border-radius:2px;padding:2px 4px;font-family:var(--mono);font-size:8px;color:var(--text-muted);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cal-trade-dot.dot-win{background:var(--green-dim);color:var(--green);}
+.cal-trade-dot.dot-loss{background:var(--red-dim);color:var(--red);}
+.cal-trade-dot.dot-pending{background:var(--orange-dim);color:var(--orange);}
+.cal-trade-dot.dot-be{background:var(--amber-dim);color:var(--amber);}
+.journal-view{flex-direction:column;padding:24px;overflow-y:auto;}
+.journal-wrap{max-width:760px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:28px;}
+.journal-day-block{background:var(--surface);border:1px solid var(--border);border-radius:7px;overflow:hidden;}
+.journal-day-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--surface2);}
+.journal-day-date{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text);}
+.journal-day-body{padding:18px;display:flex;flex-direction:column;gap:16px;}
+.journal-section-label{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;}
+.journal-presession{background:var(--surface3);border-radius:5px;padding:14px;border-left:3px solid var(--accent);}
+.journal-entry-area textarea{background:var(--surface3);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--sans);font-size:13px;padding:12px;outline:none;transition:border-color .15s;width:100%;min-height:90px;line-height:1.65;resize:vertical;}
+.journal-entry-area textarea:focus{border-color:var(--accent);}
+.journal-trades-today{display:flex;flex-wrap:wrap;gap:6px;}
+.journal-trade-chip{font-family:var(--mono);font-size:10px;padding:4px 9px;border-radius:3px;background:var(--tag-bg);border:1px solid var(--border2);color:var(--text-muted);cursor:pointer;transition:all .12s;}
+.journal-trade-chip:hover{border-color:var(--accent);color:var(--accent);}
+.presession-section{margin-bottom:22px;}
+.presession-section:last-child{margin-bottom:0;}
+.presession-section-title{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.presession-checklist{display:flex;flex-direction:column;gap:6px;}
+.check-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface3);border-radius:4px;border:1px solid var(--border);cursor:pointer;transition:all .12s;}
+.check-item.checked{border-color:var(--green);background:var(--green-dim);}
+.check-box{width:14px;height:14px;border:1.5px solid var(--border2);border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;transition:all .12s;color:white;}
+.check-item.checked .check-box{border-color:var(--green);background:var(--green);}
+.check-label{font-family:var(--mono);font-size:10px;color:var(--text-muted);}
+.check-item.checked .check-label{color:var(--green);}
+.presession-bias-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;}
+.bias-item{background:var(--surface3);border:1px solid var(--border);border-radius:4px;padding:10px 12px;}
+.bias-item-label{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;}
+.bias-item select,.bias-item textarea{background:var(--surface);border:1px solid var(--border2);border-radius:3px;color:var(--text);font-family:var(--mono);font-size:11px;padding:5px 8px;outline:none;width:100%;transition:border-color .15s;}
+.bias-item textarea{font-family:var(--sans);font-size:12px;min-height:50px;resize:vertical;}
+.bias-item select:focus,.bias-item textarea:focus{border-color:var(--accent);}
+.review-filter-bar{max-width:1200px;width:100%;margin:0 auto 20px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 18px;display:flex;flex-direction:column;gap:12px;}
+.review-filter-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.review-filter-group{display:flex;flex-direction:column;gap:6px;}
+.review-filter-group-label{font-family:var(--mono);font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-dim);}
+.review-filter-chips-row{display:flex;flex-wrap:wrap;gap:5px;}
+.filter-chip-outcome{font-family:var(--mono);font-size:10px;font-weight:600;padding:4px 12px;border-radius:4px;border:1.5px solid var(--border2);background:transparent;cursor:pointer;transition:all .12s;letter-spacing:.06em;}
+.filter-chip-outcome.fc-win{color:var(--green);}
+.filter-chip-outcome.fc-win:hover,.filter-chip-outcome.fc-win.active-filter{background:var(--green-dim);border-color:var(--green);}
+.filter-chip-outcome.fc-loss{color:var(--red);}
+.filter-chip-outcome.fc-loss:hover,.filter-chip-outcome.fc-loss.active-filter{background:var(--red-dim);border-color:var(--red);}
+.filter-chip-outcome.fc-pending{color:var(--orange);}
+.filter-chip-outcome.fc-pending:hover,.filter-chip-outcome.fc-pending.active-filter{background:var(--orange-dim);border-color:var(--orange);}
+.filter-chip-outcome.fc-be{color:var(--amber);}
+.filter-chip-outcome.fc-be:hover,.filter-chip-outcome.fc-be.active-filter{background:var(--amber-dim);border-color:var(--amber);}
+.review-filter-divider{width:1px;height:28px;background:var(--border2);margin:0 4px;flex-shrink:0;}
+.filter-clear-btn{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:3px;transition:color .12s;margin-left:auto;}
+.filter-clear-btn:hover{color:var(--text);}
+.filter-active-count{font-family:var(--mono);font-size:9px;color:var(--accent);background:var(--accent-dim);border-radius:10px;padding:2px 8px;display:none;}
+.filter-active-count.visible{display:inline;}
+.ps-routine-editable{display:flex;flex-direction:column;gap:6px;}
+.ps-routine-item{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface3);border-radius:4px;border:1px solid var(--border);}
+.ps-routine-item.checked{border-color:var(--green);background:var(--green-dim);}
+.ps-routine-del{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:11px;margin-left:auto;padding:0 2px;transition:color .12s;flex-shrink:0;}
+.ps-routine-del:hover{color:var(--red);}
+.ps-routine-add{display:flex;gap:6px;margin-top:6px;}
+.ps-routine-add input{flex:1;background:var(--surface3);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:11px;padding:7px 10px;outline:none;transition:border-color .15s;}
+.ps-routine-add input:focus{border-color:var(--accent);}
+.ps-routine-add button{background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);font-family:var(--mono);font-size:9px;padding:7px 12px;border-radius:4px;cursor:pointer;letter-spacing:.06em;white-space:nowrap;}
+.ps-routine-add button:hover{background:var(--accent);color:white;}
+.ps-screenshot-zone{border:1.5px dashed var(--border2);border-radius:4px;padding:14px;display:flex;flex-direction:column;gap:10px;}
+.ps-screenshot-drop{border:1.5px dashed var(--border2);border-radius:3px;padding:14px;text-align:center;cursor:pointer;font-family:var(--mono);font-size:10px;color:var(--text-muted);position:relative;transition:all .15s;}
+.ps-screenshot-drop:hover,.ps-screenshot-drop.paste-active{border-color:var(--accent);background:var(--accent-dim);color:var(--accent);}
+.ps-screenshot-drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.ps-screenshot-grid{display:flex;flex-wrap:wrap;gap:8px;}
+.ps-ss-thumb{position:relative;width:100px;height:63px;border-radius:3px;overflow:hidden;border:1px solid var(--border2);cursor:pointer;background:var(--surface2);}
+.ps-ss-thumb img{width:100%;height:100%;object-fit:cover;}
+.ps-ss-del{position:absolute;top:2px;right:2px;background:rgba(240,86,106,.85);color:white;border:none;border-radius:2px;font-size:8px;padding:1px 4px;cursor:pointer;opacity:0;transition:opacity .12s;}
+.ps-ss-thumb:hover .ps-ss-del{opacity:1;}
+.filter-section-label{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-right:4px;}
+.alert-banner{border-radius:4px;padding:8px 14px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;display:flex;align-items:center;gap:8px;margin-bottom:16px;}
+.banner-pending{background:var(--orange-dim);border:1px solid var(--orange);color:var(--orange);}
+.banner-review{background:var(--amber-dim);border:1px solid var(--amber);color:var(--amber);}
+/* STRUCTURED SCREENSHOTS */
+.ss-sections{display:flex;flex-direction:column;gap:12px;}
+.ss-section{background:var(--surface3);border:1px solid var(--border2);border-radius:5px;overflow:hidden;}
+.ss-section-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface2);}
+.ss-section-label{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;}
+.ss-section-label.fixed{color:var(--accent);}
+.ss-section-label.auto{color:var(--amber);}
+.ss-section-label.custom{color:var(--purple);}
+.ss-section-body{padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.ss-slot{display:flex;flex-direction:column;gap:6px;}
+.ss-slot-label{font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);}
+.ss-drop-target{border:1.5px dashed var(--border2);border-radius:4px;min-height:100px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:all .15s;background:var(--surface);overflow:hidden;}
+.ss-drop-target:hover,.ss-drop-target.drag-over{border-color:var(--accent);background:var(--accent-dim);}
+.ss-drop-target.has-image{border-style:solid;border-color:var(--border2);}
+.ss-drop-target img{width:100%;height:100%;object-fit:cover;display:block;}
+.ss-drop-target input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.ss-drop-placeholder{font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:.08em;text-align:center;padding:8px;pointer-events:none;}
+.ss-img-overlay{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:flex-end;padding:4px;opacity:0;transition:opacity .15s;background:linear-gradient(transparent 60%,rgba(0,0,0,.6));}
+.ss-drop-target:hover .ss-img-overlay{opacity:1;}
+.ss-img-del{background:rgba(240,86,106,.9);color:white;border:none;border-radius:2px;font-size:9px;padding:2px 6px;cursor:pointer;}
+.ss-img-expand{background:rgba(0,0,0,.6);color:white;border:none;border-radius:2px;font-size:9px;padding:2px 6px;cursor:pointer;margin-right:4px;}
+.ss-annotation{background:var(--surface);border:1px solid var(--border2);border-radius:3px;color:var(--text);font-family:var(--sans);font-size:11px;padding:6px 8px;outline:none;width:100%;min-height:44px;resize:vertical;line-height:1.5;transition:border-color .15s;}
+.ss-annotation:focus{border-color:var(--accent);}
+.ss-section-remove{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:11px;padding:2px 6px;border-radius:2px;transition:color .12s;}
+.ss-section-remove:hover{color:var(--red);}
+.ss-add-custom{display:flex;gap:6px;margin-top:4px;}
+.ss-add-custom input{flex:1;background:var(--surface3);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:10px;padding:6px 10px;outline:none;transition:border-color .15s;}
+.ss-add-custom input:focus{border-color:var(--accent);}
+.ss-add-custom button{background:var(--purple-dim);border:1px solid var(--purple);color:var(--purple);font-family:var(--mono);font-size:9px;padding:6px 12px;border-radius:4px;cursor:pointer;white-space:nowrap;transition:all .12s;}
+.ss-add-custom button:hover{background:var(--purple);color:white;}
+/* WEEKLY REVIEW */
+.weekly-view{flex-direction:column;padding:24px;overflow-y:auto;}
+.weekly-wrap{max-width:960px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:24px;}
+.weekly-nav{display:flex;align-items:center;justify-content:space-between;}
+.weekly-nav-label{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text);}
+.weekly-block{background:var(--surface);border:1px solid var(--border);border-radius:7px;overflow:hidden;}
+.weekly-block-header{padding:14px 18px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:space-between;}
+.weekly-block-title{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text-muted);}
+.weekly-block-body{padding:18px;}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:16px;}
+.stat-card{background:var(--surface3);border:1px solid var(--border2);border-radius:5px;padding:12px 14px;}
+.stat-card-val{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--text);line-height:1;}
+.stat-card-label{font-family:var(--mono);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-top:5px;}
+.correlation-table{width:100%;border-collapse:collapse;}
+.correlation-table th{font-family:var(--mono);font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);}
+.correlation-table td{font-family:var(--mono);font-size:10px;padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text-muted);}
+.correlation-table tr:last-child td{border-bottom:none;}
+.correlation-table td:first-child{color:var(--text);}
+.corr-bar-wrap{display:flex;align-items:center;gap:8px;}
+.corr-bar{height:5px;border-radius:2px;background:var(--accent);min-width:4px;transition:width .3s;}
+.corr-bar.green{background:var(--green);}
+.corr-bar.red{background:var(--red);}
+.corr-bar.amber{background:var(--amber);}
+.weekly-journal{background:var(--surface3);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--sans);font-size:13px;padding:12px;outline:none;width:100%;min-height:80px;resize:vertical;line-height:1.65;transition:border-color .15s;}
+.weekly-journal:focus{border-color:var(--accent);}
+.session-state-banner{display:none;margin-bottom:16px;padding:12px 16px;border-radius:5px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;border:1px solid;}
+.session-state-banner.warn{background:var(--red-dim);border-color:var(--red);color:var(--red);}
+.session-state-banner.caution{background:var(--amber-dim);border-color:var(--amber);color:var(--amber);}
+.readiness-meter{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface3);border-radius:4px;border:1px solid var(--border2);margin-top:10px;}
+.readiness-label{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);white-space:nowrap;}
+.readiness-bar-track{flex:1;height:6px;background:var(--border2);border-radius:3px;overflow:hidden;}
+.readiness-bar-fill{height:100%;border-radius:3px;transition:width .4s,background .4s;}
+.readiness-score-val{font-family:var(--mono);font-size:11px;font-weight:600;white-space:nowrap;}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="topbar">
+  <div class="topbar-brand"><span>◈</span> TRADE JOURNAL</div>
+  <div class="topbar-actions">
+    <div class="autosave-dot" id="autosave-indicator">Autosave on</div>
+    <button class="btn btn-ghost btn-sm" onclick="exportData()">Export JSON</button>
+    <button class="btn btn-ghost btn-sm" onclick="importData()">Import JSON</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
+    <button class="btn btn-primary" onclick="switchView('form');resetForm()">+ New Trade</button>
+  </div>
+</div>
+<div class="nav-tabs">
+  <button class="nav-tab active" data-view="log" onclick="switchView('log')">Log</button>
+  <button class="nav-tab" data-view="review" onclick="switchView('review')">Review</button>
+  <button class="nav-tab" data-view="calendar" onclick="switchView('calendar')">Calendar</button>
+  <button class="nav-tab" data-view="journal" onclick="switchView('journal')">Daily Journal</button>
+  <button class="nav-tab" data-view="form" onclick="switchView('form')">Entry Form</button>
+  <button class="nav-tab" data-view="weekly" onclick="switchView('weekly')">Weekly Review</button>
+  <button class="nav-tab" onclick="openTagEditor()">Edit Tags</button>
+</div>
+<div class="main">
+<!-- LOG VIEW -->
+<div class="view log-view active" id="view-log">
+  <div class="trade-list">
+    <div class="trade-list-header"><h3>Trades</h3><span id="trade-count" style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">0</span></div>
+    <div class="filter-bar">
+      <div class="filter-bar-label"><span>Quick Filter</span><button class="btn btn-ghost btn-sm" onclick="clearLogFilter()" style="padding:2px 6px;font-size:8px;">Clear</button></div>
+      <div class="filter-chips">
+        <div class="filter-chip" id="fc-pending" onclick="toggleLogFilter('pending')">Pending</div>
+        <div class="filter-chip" id="fc-needs-review" onclick="toggleLogFilter('needs-review')">Needs Review</div>
+        <div class="filter-chip" id="fc-Win" onclick="toggleLogFilter('Win')">Win</div>
+        <div class="filter-chip" id="fc-Loss" onclick="toggleLogFilter('Loss')">Loss</div>
+        <div class="filter-chip" id="fc-Long" onclick="toggleLogFilter('Long')">Long</div>
+        <div class="filter-chip" id="fc-Short" onclick="toggleLogFilter('Short')">Short</div>
+        <div class="filter-chip" id="fc-Aplus" onclick="toggleLogFilter('A+')">A+</div>
+        <div class="filter-chip" id="fc-A" onclick="toggleLogFilter('A')">A</div>
+        <div class="filter-chip" id="fc-B" onclick="toggleLogFilter('B')">B</div>
+      </div>
+    </div>
+    <div id="trade-list-body" style="flex:1;overflow-y:auto;"></div>
+  </div>
+  <div class="detail-panel" id="detail-panel">
+    <div class="empty-state"><div class="empty-state-icon">◫</div><div>Select a trade to review</div><div style="font-size:10px;margin-top:4px;color:var(--text-dim)">or click New Trade to log one</div></div>
+  </div>
+</div>
+<!-- REVIEW VIEW -->
+<div class="view review-view" id="view-review">
+  <div class="review-filter-bar" style="align-self:flex-start;">
+    <div class="review-filter-row" style="justify-content:space-between;">
+      <span style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);">Filter Trades</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="filter-active-count" id="review-active-count">0 active</span>
+        <button class="filter-clear-btn" onclick="clearReviewFilter()">Clear all</button>
+      </div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:20px;">
+      <div class="review-filter-group">
+        <div class="review-filter-group-label">Outcome</div>
+        <div class="review-filter-chips-row">
+          <button class="filter-chip-outcome fc-win" onclick="toggleReviewFilter('Win')">WIN</button>
+          <button class="filter-chip-outcome fc-loss" onclick="toggleReviewFilter('Loss')">LOSS</button>
+          <button class="filter-chip-outcome fc-be" onclick="toggleReviewFilter('Breakeven')">BREAKEVEN</button>
+          <button class="filter-chip-outcome fc-pending" onclick="toggleReviewFilter('Pending')">PENDING</button>
+        </div>
+      </div>
+      <div class="review-filter-group">
+        <div class="review-filter-group-label">Direction</div>
+        <div class="review-filter-chips-row">
+          <button class="filter-chip-outcome" style="color:var(--green);" onclick="toggleReviewFilter('Long')">LONG</button>
+          <button class="filter-chip-outcome" style="color:var(--red);" onclick="toggleReviewFilter('Short')">SHORT</button>
+        </div>
+      </div>
+      <div class="review-filter-group">
+        <div class="review-filter-group-label">Quality</div>
+        <div class="review-filter-chips-row">
+          <button class="filter-chip-outcome fc-win" onclick="toggleReviewFilter('A+')">A+</button>
+          <button class="filter-chip-outcome" style="color:var(--accent);" onclick="toggleReviewFilter('A')">A</button>
+          <button class="filter-chip-outcome fc-be" onclick="toggleReviewFilter('B')">B</button>
+          <button class="filter-chip-outcome fc-loss" onclick="toggleReviewFilter('C')">C</button>
+        </div>
+      </div>
+      <div class="review-filter-group" style="flex:1;min-width:200px;">
+        <div class="review-filter-group-label">Setup / Tag</div>
+        <div class="review-filter-chips-row" id="review-filter-chips"></div>
+      </div>
+    </div>
+    <div id="review-active-tags" style="display:none;flex-wrap:wrap;gap:5px;padding-top:8px;border-top:1px solid var(--border);">
+      <span style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-right:4px;align-self:center;">Active:</span>
+      <div id="review-active-tags-list" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+    </div>
+  </div>
+  <div class="review-grid" id="review-grid"></div>
+</div>
+<!-- CALENDAR VIEW -->
+<div class="view cal-view" id="view-calendar">
+  <div class="cal-wrap">
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="calPrev()">← Prev</button>
+      <div class="cal-month-label" id="cal-month-label"></div>
+      <button class="cal-nav-btn" onclick="calNext()">Next →</button>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
+</div>
+<!-- JOURNAL VIEW -->
+<div class="view journal-view" id="view-journal">
+  <div class="journal-wrap" id="journal-wrap"></div>
+</div>
+<!-- FORM VIEW -->
+<div class="view form-view" id="view-form">
+  <div id="draft-banner" style="display:none;max-width:900px;width:100%;margin:0 auto 16px;background:var(--amber-dim);border:1px solid var(--amber);border-radius:5px;padding:10px 16px;font-family:var(--mono);font-size:10px;color:var(--amber);letter-spacing:.08em;align-items:center;justify-content:space-between;">
+    <span>◆ Unsaved draft restored</span>
+    <button class="btn btn-ghost btn-sm" onclick="clearDraft()" style="color:var(--amber);border-color:var(--amber);">Discard</button>
+  </div>
+  <div class="form-grid">
+    <div class="form-section">
+      <div class="form-section-header"><div class="section-dot dot-blue"></div><div class="section-label">Trade Context</div></div>
+      <div class="form-body">
+        <div class="field-row">
+          <div class="field"><div class="field-label">Date</div><input type="date" id="f-date"></div>
+          <div class="field"><div class="field-label">Time</div><input type="time" id="f-time"></div>
+          <div class="field"><div class="field-label">Asset</div>
+            <select id="f-asset"><option value="">Select...</option><option>GOLD / XAUUSD</option><option>SILVER / XAGUSD</option><option>USOIL</option><option>NQ / NASDAQ</option><option>ES / SPX</option><option>DXY</option><option>EURUSD</option><option>GBPUSD</option><option>GBPJPY</option><option>USDJPY</option><option>BTCUSD</option><option>ETHUSD</option><option>Other</option></select>
+          </div>
+          <div class="field"><div class="field-label">Session</div>
+            <select id="f-session"><option value="">Select...</option><option>London Open</option><option>London Killzone</option><option>NY Open</option><option>NY AM Killzone</option><option>NY Lunch</option><option>NY PM Killzone</option><option>Asia</option><option>Pre-Market</option><option>Macro Window</option></select>
+          </div>
+          <div class="field"><div class="field-label">Day</div>
+            <select id="f-dow"><option value="">Select...</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option></select>
+          </div>
+          <div class="field"><div class="field-label">Direction</div>
+            <select id="f-direction"><option value="">Select...</option><option>Long</option><option>Short</option></select>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:14px;">
+          <div class="field-label" style="margin-bottom:8px;">Outcome</div>
+          <div class="outcome-row">
+            <button class="outcome-btn" data-val="Pending" onclick="selectOutcome(this)">PENDING</button>
+            <button class="outcome-btn" data-val="Win" onclick="selectOutcome(this)">WIN</button>
+            <button class="outcome-btn" data-val="Loss" onclick="selectOutcome(this)">LOSS</button>
+            <button class="outcome-btn" data-val="Breakeven" onclick="selectOutcome(this)">BREAKEVEN</button>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field"><div class="field-label">Market Condition</div>
+            <select id="f-market-condition"><option value="">Select...</option><option>Trending</option><option>Ranging</option><option>Choppy</option><option>Volatile</option><option>Low Volatility</option><option>News Driven</option></select>
+          </div>
+          <div class="field"><div class="field-label">Volatility</div>
+            <select id="f-volatility"><option value="">Select...</option><option>High</option><option>Medium</option><option>Low</option></select>
+          </div>
+          <div class="field"><div class="field-label">News</div>
+            <select id="f-news"><option value="">Select...</option><option>High Impact Active</option><option>High Impact Nearby</option><option>Medium Impact</option><option>Clean (No News)</option></select>
+          </div>
+          <div class="field"><div class="field-label">Volume</div>
+            <select id="f-volume"><option value="">Select...</option><option>High</option><option>Medium</option><option>Low</option><option>Thin</option></select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-header"><div class="section-dot dot-blue"></div><div class="section-label">Market Structure & Bias</div></div>
+      <div class="form-body">
+        <div class="tag-group"><div class="tag-group-label">HTF Bias</div><div class="tag-grid" id="tags-htf-bias"></div></div>
+        <div class="tag-group"><div class="tag-group-label">LTF Bias</div><div class="tag-grid" id="tags-ltf-bias"></div></div>
+        <div class="tag-group"><div class="tag-group-label">Price Location</div><div class="tag-grid" id="tags-price-location"></div></div>
+        <div class="tag-group"><div class="tag-group-label">Liquidity Context</div><div class="tag-grid" id="tags-liquidity-context"></div></div>
+        <div class="tag-group"><div class="tag-group-label">Trend Alignment</div><div class="tag-grid" id="tags-trend-align"></div></div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-header"><div class="section-dot dot-green"></div><div class="section-label">Setup & Entry</div></div>
+      <div class="form-body">
+        <div class="tag-group"><div class="tag-group-label">Setup Type</div><div class="tag-grid" id="tags-setup"></div></div>
+        <div class="tag-group"><div class="tag-group-label">Entry Trigger</div><div class="tag-grid" id="tags-entry-trigger"></div></div>
+        <div class="tag-group"><div class="tag-group-label">Confirmation</div><div class="tag-grid" id="tags-confirmation"></div></div>
+        <div class="tag-group"><div class="tag-group-label">Entry Quality</div><div class="tag-grid" id="tags-entry-quality"></div></div>
+        <div class="field" style="margin-top:4px;"><div class="field-label">Setup Notes</div><textarea id="f-setup-notes" placeholder="Describe the setup, confluence, and reasoning..."></textarea></div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-header"><div class="section-dot dot-amber"></div><div class="section-label">Trade Management</div></div>
+      <div class="form-body">
+        <div class="tag-group"><div class="tag-group-label">Management Actions</div><div class="tag-grid" id="tags-management"></div></div>
+        <div class="tag-group"><div class="tag-group-label">Management Quality</div><div class="tag-grid" id="tags-management-quality"></div></div>
+        <div class="tag-group"><div class="tag-group-label">Execution</div><div class="tag-grid" id="tags-execution"></div></div>
+        <div class="field" style="margin-top:4px;"><div class="field-label">Management Notes</div><textarea id="f-management-notes" placeholder="How did you manage this trade?"></textarea></div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-header"><div class="section-dot dot-purple"></div><div class="section-label">Psychology</div></div>
+      <div class="form-body">
+        <div class="psych-phases">
+          <div class="psych-phase phase-before">
+            <div class="psych-phase-header">Before Entry</div>
+            <div class="psych-phase-body">
+              <div class="tag-group"><div class="tag-group-label">Emotional State</div><div class="tag-grid" id="tags-psych-before-emotion"></div></div>
+              <div class="tag-group"><div class="tag-group-label">Drivers</div><div class="tag-grid" id="tags-psych-before-drivers"></div></div>
+              <div class="field"><div class="field-label">Notes</div><textarea id="f-psych-before" style="min-height:56px" placeholder="State of mind before entering..."></textarea></div>
+            </div>
+          </div>
+          <div class="psych-phase phase-during">
+            <div class="psych-phase-header">During Trade</div>
+            <div class="psych-phase-body">
+              <div class="tag-group"><div class="tag-group-label">Emotional State</div><div class="tag-grid" id="tags-psych-during-emotion"></div></div>
+              <div class="tag-group"><div class="tag-group-label">Drivers</div><div class="tag-grid" id="tags-psych-during-drivers"></div></div>
+              <div class="field"><div class="field-label">Notes</div><textarea id="f-psych-during" style="min-height:56px" placeholder="What were you feeling while holding?"></textarea></div>
+            </div>
+          </div>
+          <div class="psych-phase phase-after">
+            <div class="psych-phase-header">After Exit</div>
+            <div class="psych-phase-body">
+              <div class="tag-group"><div class="tag-group-label">Emotional State</div><div class="tag-grid" id="tags-psych-after-emotion"></div></div>
+              <div class="tag-group"><div class="tag-group-label">Reaction</div><div class="tag-grid" id="tags-psych-after-reaction"></div></div>
+              <div class="field"><div class="field-label">Notes</div><textarea id="f-psych-after" style="min-height:56px" placeholder="How did you react to the outcome?"></textarea></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-header"><div class="section-dot dot-red"></div><div class="section-label">Discipline</div></div>
+      <div class="form-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;">
+          <div><div class="tag-group-label" style="margin-bottom:8px;font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-dim);text-transform:uppercase;">Before Entry</div><div class="tag-grid" id="tags-disc-before"></div></div>
+          <div><div class="tag-group-label" style="margin-bottom:8px;font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-dim);text-transform:uppercase;">During Trade</div><div class="tag-grid" id="tags-disc-during"></div></div>
+          <div><div class="tag-group-label" style="margin-bottom:8px;font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--text-dim);text-transform:uppercase;">After Exit</div><div class="tag-grid" id="tags-disc-after"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-header"><div class="section-dot dot-purple"></div><div class="section-label">Mentality</div></div>
+      <div class="form-body">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px;">
+          <div class="tag-group"><div class="tag-group-label">Mental State</div><div class="tag-grid" id="tags-mentality-state"></div></div>
+          <div class="tag-group"><div class="tag-group-label">Relationship With Risk</div><div class="tag-grid" id="tags-mentality-risk"></div></div>
+          <div class="tag-group"><div class="tag-group-label">Relationship With Outcome</div><div class="tag-grid" id="tags-mentality-outcome"></div></div>
+          <div class="tag-group"><div class="tag-group-label">Trader Identity</div><div class="tag-grid" id="tags-mentality-identity"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-header"><div class="section-dot dot-amber"></div><div class="section-label">External Conditions</div><span id="ext-autofill-badge" style="margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--green);display:none;">✓ Auto-filled from today's check-in</span></div>
+      <div class="form-body"><div class="score-grid" id="score-grid"></div></div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-header"><div class="section-dot dot-blue"></div><div class="section-label">Chart Screenshots</div><span style="margin-left:auto;font-family:var(--mono);font-size:9px;color:var(--text-dim);">Fixed sections + auto-added from tags · Ctrl+V to paste into focused slot</span></div>
+      <div class="form-body">
+        <div id="session-state-banner" class="session-state-banner"></div>
+        <div class="ss-sections" id="ss-sections"></div>
+        <div class="ss-add-custom" style="margin-top:12px;">
+          <input type="text" id="ss-custom-label" placeholder="Add custom screenshot section (e.g. 'Macro Context', 'PDH Zone')...">
+          <button onclick="addCustomSsSection()">+ Add Section</button>
+        </div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-header"><div class="section-dot dot-green"></div><div class="section-label">Post-Trade Review</div></div>
+      <div class="form-body">
+        <div class="field-row">
+          <div class="field full"><div class="field-label">What did I do well?</div><textarea id="f-review-good" placeholder="Identify what worked technically and psychologically..."></textarea></div>
+          <div class="field full"><div class="field-label">What would I do differently?</div><textarea id="f-review-improve" placeholder="Honest assessment of where the trade could have been better..."></textarea></div>
+          <div class="field full"><div class="field-label">Key Lesson</div><textarea id="f-review-lesson" style="min-height:56px" placeholder="The one thing to carry forward..."></textarea></div>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="switchView('log')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTrade()">Save Trade</button>
+    </div>
+  </div>
+</div>
+
+<!-- WEEKLY REVIEW VIEW -->
+<div class="view weekly-view" id="view-weekly">
+  <div class="weekly-wrap">
+    <div class="weekly-nav">
+      <button class="cal-nav-btn" onclick="weeklyPrev()">← Prev Week</button>
+      <div class="weekly-nav-label" id="weekly-nav-label"></div>
+      <button class="cal-nav-btn" onclick="weeklyNext()">Next Week →</button>
+    </div>
+    <div id="weekly-body"></div>
+  </div>
+</div>
+</div><!-- /main -->
+</div><!-- /app -->
+<!-- TAG EDITOR MODAL -->
+<div class="modal-overlay" id="tag-editor-modal" onclick="if(event.target===this)closeTagEditor()">
+  <div class="modal-box modal-wide" onclick="event.stopPropagation()">
+    <div class="modal-header"><h2>Edit Tag Lists</h2><button class="btn btn-ghost btn-sm" onclick="closeTagEditor()">✕ Close</button></div>
+    <div class="modal-body" id="tag-editor-body"></div>
+    <div class="modal-footer"><span style="font-family:var(--mono);font-size:9px;color:var(--text-dim);">Changes save automatically</span></div>
+  </div>
+</div>
+<!-- PRE-SESSION MODAL -->
+<div class="modal-overlay" id="presession-modal">
+  <div class="modal-box modal-wide" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>☀ Daily Pre-Session Check-In — <span id="presession-date-label"></span></h2>
+      <span style="font-family:var(--mono);font-size:9px;color:var(--text-dim);">External conditions auto-fill into all trades today</span>
+    </div>
+    <div class="modal-body">
+
+      <!-- 1. EXTERNAL CONDITIONS -->
+      <div class="presession-section">
+        <div class="presession-section-title">External Conditions</div>
+        <div class="score-grid" id="ps-score-grid"></div>
+      </div>
+
+      <!-- 2. PSYCHOLOGICAL STATE -->
+      <div class="presession-section">
+        <div class="presession-section-title">Psychological State</div>
+        <div class="tag-group"><div class="tag-group-label" style="margin-bottom:8px;">How are you feeling entering today?</div><div class="tag-grid" id="ps-emotion-tags"></div></div>
+        <div class="tag-group" style="margin-top:12px;"><div class="tag-group-label" style="margin-bottom:8px;">Psychological drivers present?</div><div class="tag-grid" id="ps-driver-tags"></div></div>
+      </div>
+
+      <!-- 3. PRE-TRADING ROUTINE (editable) -->
+      <div class="presession-section">
+        <div class="presession-section-title">Pre-Trading Routine</div>
+        <div class="ps-routine-editable" id="ps-checklist"></div>
+        <div class="ps-routine-add">
+          <input type="text" id="ps-routine-new" placeholder="Add a custom routine item..." onkeydown="if(event.key==='Enter')addRoutineItem()">
+          <button onclick="addRoutineItem()">+ Add Item</button>
+        </div>
+      </div>
+
+      <!-- 4. MARKET BIAS -->
+      <div class="presession-section">
+        <div class="presession-section-title">Market Bias / What I'm Watching</div>
+        <div class="presession-bias-grid">
+          <div class="bias-item"><div class="bias-item-label">Overall Bias</div><select id="ps-mkt-bias"><option value="">Select...</option><option>Bullish</option><option>Bearish</option><option>Neutral</option><option>Mixed</option></select></div>
+          <div class="bias-item"><div class="bias-item-label">Key Instruments</div><textarea id="ps-instruments" placeholder="e.g. GOLD targeting session high, NQ at PDH..."></textarea></div>
+          <div class="bias-item"><div class="bias-item-label">Key Levels</div><textarea id="ps-levels" placeholder="PDH/PDL, overnight range, key OBs..."></textarea></div>
+          <div class="bias-item"><div class="bias-item-label">Ideal Setup Today</div><textarea id="ps-ideal-setup" placeholder="What does the A+ setup look like today?"></textarea></div>
+        </div>
+      </div>
+
+      <!-- 5. SCREENSHOTS -->
+      <div class="presession-section">
+        <div class="presession-section-title">Chart Screenshots</div>
+        <div class="ps-screenshot-zone">
+          <div class="ps-screenshot-drop" id="ps-drop-zone">
+            <input type="file" accept="image/*" multiple onchange="handlePsScreenshots(event)">
+            Click, drag or Ctrl+V to add chart screenshots
+          </div>
+          <div class="ps-screenshot-grid" id="ps-screenshot-grid"></div>
+        </div>
+      </div>
+
+      <!-- 6. OPEN JOURNAL / REFLECTION (merged) -->
+      <div class="presession-section">
+        <div class="presession-section-title">Open Journal Entry</div>
+        <div class="field"><textarea id="ps-journal" style="min-height:120px;font-family:var(--sans);font-size:13px;line-height:1.7;" placeholder="Anything on your mind — emotional state, personal context, market thoughts, intentions for the session. This is your space."></textarea></div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="skipPresession()">Skip for today</button>
+      <button class="btn btn-primary" onclick="savePresession()">Save & Start Trading</button>
+    </div>
+  </div>
+</div>
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+<script>
+var trades=JSON.parse(localStorage.getItem('tj-trades')||'[]');
+var editingId=null,currentScreenshots=[],currentScores={},autosaveTimer=null,selectedOutcome='',logFilter=null,calYear=new Date().getFullYear(),calMonth=new Date().getMonth();
+var activeReviewFilters=new Set();
+var psScores={},psChecked=new Set(),psEmotions=[],psDrivers=[],psScreenshots=[];
+var DEFAULT_ROUTINE=['Reviewed PDH / PDL and overnight range','Checked economic calendar for news','Identified key liquidity levels','Reviewed HTF bias and structure','Set trading plan for session','Not trading on tilt or revenge','Risk parameters confirmed','Physically ready (not tired/distracted)'];
+
+var DEFAULT_TAGS={
+  'htf-bias':['HTF Bullish','HTF Bearish','HTF Neutral'],
+  'ltf-bias':['LTF Bullish','LTF Bearish','LTF Neutral'],
+  'price-location':['At Premium','At Discount','At Equilibrium'],
+  'liquidity-context':['Into Liquidity','From Liquidity','Equal Highs Above','Equal Lows Below','Buyside Resting','Sellside Resting'],
+  'trend-align':['With Trend','Against Trend','Counter-Trend'],
+  'setup':['Session Sweep','Targeting Session Sweep','Macro','Swing','Position Trade','Key Open Continuation','Mean Reversion / Reversion to Fair Price','HTF OB','HTF FVG','Distribution','Accumulation'],
+  'entry-trigger':['Macro High/Low Sweep','90 Min H/L Sweep','BOS','IFVG','SMT','Candle Close','Retest','Rejection','Displacement','FVG Fill','OB Reaction','Liquidity Grab','Momentum Entry'],
+  'confirmation':['Confirmed','No Confirmation'],
+  'entry-quality':['A+','A','B','C','Invalid'],
+  'management':['Held Full Position','Partial Profit','Early Exit','Late Exit','Trailing Stop','Stop to Breakeven','Added to Winner','Averaged Up','Target Extended','Target Reduced','Stop Tightened','Stop Widened','Manual Exit','Rule-Based Exit','Time-Based Exit'],
+  'management-quality':['Optimal','Acceptable','Poor','Rule Violation'],
+  'execution':['Planned Entry','Actual Entry Worse','Actual Entry Better','Clean Exit','Messy Exit','Chased Entry','Patient'],
+  'psych-before-emotion':['Calm','Focused','Confident','Neutral','Uncertain','Anxious','Fearful','Frustrated','Excited','Hesitant','Bored'],
+  'psych-before-drivers':['FOMO','Greed','Impatience','Hesitation','Confirmation Bias','Overconfidence','Underconfidence','Need to Be Right','Clear Thesis','No Bias'],
+  'psych-during-emotion':['Calm','Confident','Neutral','Anxious','Fearful','Frustrated','Excited','Euphoric','Bored'],
+  'psych-during-drivers':['FOMO','Greed','Fear of Loss','Impatience','Holding with Conviction','Doubting Setup','Hoping'],
+  'psych-after-emotion':['Calm','Satisfied','Neutral','Frustrated','Disappointed','Relieved','Overjoyed','Angry'],
+  'psych-after-reaction':['Accepted Outcome','Revenge Trade Urge','Increased Confidence','Lost Confidence','Processed Cleanly','Outcome Bias','Detached'],
+  'disc-before':['Followed Plan','Deviated From Plan','Waited for Setup','Forced Setup','Chased Price','Entered Early','Entered Late','Took A+ Setup','Took B Setup','Took C Setup','No Setup'],
+  'disc-during':['Followed Management Plan','Improvised','Interfered','Overmanaged','Undermanaged','Panic Exit','Let Winner Run','Cut Winner Early','Respected Stop','Moved Stop Outside Plan'],
+  'disc-after':['Accepted Outcome','Revenge Trade','Immediate Re-entry','Continued per Plan','Stopped Trading per Plan','Increased Risk','Decreased Risk'],
+  'mentality-state':['Present','Distracted','Patient','Impatient','Process-Focused','Outcome-Focused','Analytical','Reactive','Clear','Foggy'],
+  'mentality-risk':['Comfortable Risk','Risk Aware','Risk Avoidant','Risk Seeking','Oversized','Undersized'],
+  'mentality-outcome':['Detached','P&L Focused','Win Focused','Loss Focused','Proving Myself','Recovering Losses','Protecting Gains'],
+  'mentality-identity':['Trader Mindset','Gambler Mindset','Professional','Opportunistic','Defensive','Aggressive']
+};
+var TAGS=JSON.parse(localStorage.getItem('tj-tag-defs')||'null')||JSON.parse(JSON.stringify(DEFAULT_TAGS));
+function saveTagDefs(){localStorage.setItem('tj-tag-defs',JSON.stringify(TAGS));}
+
+var TAG_LABELS={'htf-bias':'HTF Bias','ltf-bias':'LTF Bias','price-location':'Price Location','liquidity-context':'Liquidity Context','trend-align':'Trend Alignment','setup':'Setup Type','entry-trigger':'Entry Trigger','confirmation':'Confirmation','entry-quality':'Entry Quality','management':'Management Actions','management-quality':'Management Quality','execution':'Execution Accuracy','psych-before-emotion':'Psych Before Emotion','psych-before-drivers':'Psych Before Drivers','psych-during-emotion':'Psych During Emotion','psych-during-drivers':'Psych During Drivers','psych-after-emotion':'Psych After Emotion','psych-after-reaction':'Psych After Reaction','disc-before':'Discipline Before','disc-during':'Discipline During','disc-after':'Discipline After','mentality-state':'Mentality State','mentality-risk':'Mentality Risk','mentality-outcome':'Mentality Outcome','mentality-identity':'Mentality Identity'};
+
+var TAG_COLOR_MAP={'entry-quality':{'A+':'green','A':'','B':'amber','C':'red','Invalid':'red'},'management-quality':{'Optimal':'green','Acceptable':'','Poor':'red','Rule Violation':'red'},'confirmation':{'Confirmed':'green','No Confirmation':'red'},'psych-before-emotion':{'Calm':'green','Focused':'green','Confident':'green','Anxious':'red','Fearful':'red','Frustrated':'red'},'psych-during-emotion':{'Calm':'green','Confident':'green','Anxious':'red','Fearful':'red','Frustrated':'red','Euphoric':'amber'},'psych-after-emotion':{'Calm':'green','Satisfied':'green','Frustrated':'red','Angry':'red','Overjoyed':'amber'},'disc-before':{'Followed Plan':'green','Waited for Setup':'green','Took A+ Setup':'green','Forced Setup':'red','Chased Price':'red','No Setup':'red','Deviated From Plan':'red'},'disc-during':{'Followed Management Plan':'green','Respected Stop':'green','Let Winner Run':'green','Panic Exit':'red','Moved Stop Outside Plan':'red','Cut Winner Early':'amber'},'disc-after':{'Accepted Outcome':'green','Continued per Plan':'green','Stopped Trading per Plan':'green','Revenge Trade':'red','Increased Risk':'amber'},'mentality-state':{'Present':'green','Patient':'green','Process-Focused':'green','Analytical':'green','Distracted':'red','Impatient':'red','Reactive':'red','Outcome-Focused':'amber'},'mentality-identity':{'Trader Mindset':'green','Professional':'green','Gambler Mindset':'red'}};
+
+var SCORES=[{id:'sleep',label:'Sleep Quality'},{id:'energy',label:'Energy Level'},{id:'focus',label:'Focus'},{id:'stress',label:'Stress (inverse)'},{id:'confidence',label:'Confidence'},{id:'discipline',label:'Discipline'}];
+function getRoutineItems(){return JSON.parse(localStorage.getItem('tj-routine')||'null')||DEFAULT_ROUTINE.slice();}
+function saveRoutineItems(items){localStorage.setItem('tj-routine',JSON.stringify(items));}
+
+var selectedTags={};
+function initSelectedTags(){selectedTags={};Object.keys(TAGS).forEach(function(k){selectedTags[k]=[];});}
+
+function todayStr(){return new Date().toISOString().split('T')[0];}
+function tradeNeedsReview(t){return t.outcome!=='Pending'&&(!t.notes||(!t.notes.reviewGood&&!t.notes.reviewImprove&&!t.notes.reviewLesson));}
+
+function switchView(name){
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+  document.querySelectorAll('.nav-tab[data-view]').forEach(function(t){t.classList.remove('active');});
+  document.getElementById('view-'+name).classList.add('active');
+  var tab=document.querySelector('.nav-tab[data-view="'+name+'"]');
+  if(tab)tab.classList.add('active');
+  if(name==='review')renderReview();
+  if(name==='log')renderTradeList();
+  if(name==='calendar')renderCalendar();
+  if(name==='journal')renderJournal();
+  if(name==='weekly')renderWeeklyReview();
+  if(name==='form')updateSessionStateBanner();
+}
+
+var GRID_MAP={'tags-htf-bias':'htf-bias','tags-ltf-bias':'ltf-bias','tags-price-location':'price-location','tags-liquidity-context':'liquidity-context','tags-trend-align':'trend-align','tags-setup':'setup','tags-entry-trigger':'entry-trigger','tags-confirmation':'confirmation','tags-entry-quality':'entry-quality','tags-management':'management','tags-management-quality':'management-quality','tags-execution':'execution','tags-psych-before-emotion':'psych-before-emotion','tags-psych-before-drivers':'psych-before-drivers','tags-psych-during-emotion':'psych-during-emotion','tags-psych-during-drivers':'psych-during-drivers','tags-psych-after-emotion':'psych-after-emotion','tags-psych-after-reaction':'psych-after-reaction','tags-disc-before':'disc-before','tags-disc-during':'disc-during','tags-disc-after':'disc-after','tags-mentality-state':'mentality-state','tags-mentality-risk':'mentality-risk','tags-mentality-outcome':'mentality-outcome','tags-mentality-identity':'mentality-identity'};
+
+function initTagGrid(cid,key){
+  var c=document.getElementById(cid);if(!c)return;c.innerHTML='';
+  (TAGS[key]||[]).forEach(function(tag){
+    var btn=document.createElement('button');btn.className='tag-btn';btn.textContent=tag;btn.dataset.key=key;btn.dataset.val=tag;
+    btn.onclick=function(){toggleTag(btn,key,tag);};
+    c.appendChild(btn);
+  });
+}
+
+function toggleTag(btn,key,val){
+  var single=['htf-bias','ltf-bias','price-location','trend-align','confirmation','entry-quality','management-quality'];
+  if(single.indexOf(key)>-1){document.querySelectorAll('.tag-btn[data-key="'+key+'"]').forEach(function(b){b.className='tag-btn';});selectedTags[key]=[];}
+  var arr=selectedTags[key]||[];var idx=arr.indexOf(val);
+  if(idx>-1){selectedTags[key].splice(idx,1);btn.className='tag-btn';}
+  else{selectedTags[key].push(val);var cc=(TAG_COLOR_MAP[key]||{})[val]||'';btn.className='tag-btn selected'+(cc?' '+cc:'');}
+  triggerAutosave();
+}
+
+function initScores(cid,state){
+  var c=document.getElementById(cid);if(!c)return;c.innerHTML='';
+  SCORES.forEach(function(s){
+    state[s.id]=state[s.id]||0;
+    var item=document.createElement('div');item.className='score-item';
+    item.innerHTML='<div class="score-label"><span>'+s.label+'</span><span class="score-val" id="'+cid+'-val-'+s.id+'">—</span></div><div class="score-track" id="'+cid+'-track-'+s.id+'">'
+      +[1,2,3,4,5].map(function(n){return'<div class="score-pip" onclick="setScoreIn(\''+cid+'\',\''+s.id+'\','+n+',null)"></div>';}).join('')+'</div>';
+    c.appendChild(item);
+    if(state[s.id])setScoreIn(cid,s.id,state[s.id],state);
+  });
+}
+
+function setScoreIn(cid,id,val,stateObj){
+  if(cid==='score-grid')currentScores[id]=val;
+  else if(cid==='ps-score-grid')psScores[id]=val;
+  var track=document.getElementById(cid+'-track-'+id);
+  var valEl=document.getElementById(cid+'-val-'+id);
+  if(!track)return;
+  track.querySelectorAll('.score-pip').forEach(function(pip,i){pip.className='score-pip'+(i<val?' filled c'+val:'');});
+  if(valEl)valEl.textContent=val+'/5';
+  triggerAutosave();
+}
+
+function selectOutcome(btn){
+  document.querySelectorAll('.outcome-btn').forEach(function(b){b.className='outcome-btn';});
+  var val=btn.dataset.val;selectedOutcome=val;
+  if(val==='Win')btn.className='outcome-btn sel-win';
+  else if(val==='Loss')btn.className='outcome-btn sel-loss';
+  else if(val==='Breakeven')btn.className='outcome-btn sel-be';
+  else btn.className='outcome-btn sel-pending';
+  triggerAutosave();
+}
+
+function handleScreenshots(e){
+  Array.from(e.target.files).forEach(function(f){
+    var r=new FileReader();r.onload=function(ev){currentScreenshots.push({name:f.name,dataUrl:ev.target.result});renderScreenshotGrid();triggerAutosave();};r.readAsDataURL(f);
+  });e.target.value='';
+}
+function addScreenshotFromBlob(blob,name){
+  var r=new FileReader();r.onload=function(ev){currentScreenshots.push({name:name||'paste.png',dataUrl:ev.target.result});renderScreenshotGrid();triggerAutosave();};r.readAsDataURL(blob);
+}
+// Paste listener consolidated in showPresession section above
+function renderScreenshotGrid(){
+  var grid=document.getElementById('screenshot-grid');grid.innerHTML='';
+  currentScreenshots.forEach(function(ss,i){
+    var thumb=document.createElement('div');thumb.className='screenshot-thumb';
+    var safe=ss.dataUrl.replace(/'/g,"\\'");
+    thumb.innerHTML='<img src="'+ss.dataUrl+'" alt="'+ss.name+'" onclick="openLightbox(\''+safe+'\')"><div class="screenshot-thumb-label">'+ss.name+'</div><button class="screenshot-thumb-del" onclick="deleteScreenshot('+i+')">✕</button>';
+    grid.appendChild(thumb);
+  });
+}
+function deleteScreenshot(i){currentScreenshots.splice(i,1);renderScreenshotGrid();}
+function openLightbox(src){document.getElementById('lightbox-img').src=src;document.getElementById('lightbox').classList.add('open');}
+function closeLightbox(){document.getElementById('lightbox').classList.remove('open');document.getElementById('lightbox-img').src='';}
+
+function collectDraft(){
+  var g=function(id){var el=document.getElementById(id);return el?el.value:'';};
+  return{editingId:editingId,date:g('f-date'),time:g('f-time'),asset:g('f-asset'),session:g('f-session'),dow:g('f-dow'),direction:g('f-direction'),outcome:selectedOutcome,marketCondition:g('f-market-condition'),volatility:g('f-volatility'),news:g('f-news'),volume:g('f-volume'),tags:JSON.parse(JSON.stringify(selectedTags)),scores:JSON.parse(JSON.stringify(currentScores)),screenshots:currentScreenshots.map(function(s){return{name:s.name,dataUrl:s.dataUrl};}),notes:{setup:g('f-setup-notes'),management:g('f-management-notes'),psychBefore:g('f-psych-before'),psychDuring:g('f-psych-during'),psychAfter:g('f-psych-after'),screenshots:g('f-ss-notes'),reviewGood:g('f-review-good'),reviewImprove:g('f-review-improve'),reviewLesson:g('f-review-lesson')}};
+}
+function triggerAutosave(){
+  var ind=document.getElementById('autosave-indicator');ind.className='autosave-dot saving';ind.textContent='Saving...';
+  clearTimeout(autosaveTimer);
+  autosaveTimer=setTimeout(function(){
+    var d=collectDraft();
+    var has=d.asset||d.session||d.direction||Object.values(d.tags).some(function(a){return a.length>0;})||Object.values(d.notes).some(function(v){return v.trim().length>0;});
+    if(has)localStorage.setItem('tj-draft',JSON.stringify(d));
+    ind.className='autosave-dot saved';ind.textContent='Saved';
+    setTimeout(function(){ind.className='autosave-dot';ind.textContent='Autosave on';},2000);
+  },800);
+}
+function restoreDraft(){
+  var raw=localStorage.getItem('tj-draft');if(!raw)return;
+  try{
+    var d=JSON.parse(raw);editingId=d.editingId||null;
+    var sv=function(id,val){var el=document.getElementById(id);if(el&&val)el.value=val;};
+    sv('f-date',d.date);sv('f-time',d.time);sv('f-asset',d.asset);sv('f-session',d.session);sv('f-dow',d.dow);sv('f-direction',d.direction);
+    sv('f-market-condition',d.marketCondition);sv('f-volatility',d.volatility);sv('f-news',d.news);sv('f-volume',d.volume);
+    sv('f-setup-notes',d.notes&&d.notes.setup);sv('f-management-notes',d.notes&&d.notes.management);
+    sv('f-psych-before',d.notes&&d.notes.psychBefore);sv('f-psych-during',d.notes&&d.notes.psychDuring);sv('f-psych-after',d.notes&&d.notes.psychAfter);
+    sv('f-ss-notes',d.notes&&d.notes.screenshots);sv('f-review-good',d.notes&&d.notes.reviewGood);sv('f-review-improve',d.notes&&d.notes.reviewImprove);sv('f-review-lesson',d.notes&&d.notes.reviewLesson);
+    selectedOutcome=d.outcome||'';
+    document.querySelectorAll('.outcome-btn').forEach(function(b){b.className='outcome-btn';if(b.dataset.val===d.outcome){if(d.outcome==='Win')b.className='outcome-btn sel-win';else if(d.outcome==='Loss')b.className='outcome-btn sel-loss';else if(d.outcome==='Breakeven')b.className='outcome-btn sel-be';else b.className='outcome-btn sel-pending';}});
+    Object.keys(d.tags||{}).forEach(function(key){selectedTags[key]=d.tags[key]||[];(d.tags[key]||[]).forEach(function(val){var btn=document.querySelector('.tag-btn[data-key="'+key+'"][data-val="'+val+'"]');if(btn){var cc=(TAG_COLOR_MAP[key]||{})[val]||'';btn.className='tag-btn selected'+(cc?' '+cc:'');}});});
+    currentScores=d.scores||{};SCORES.forEach(function(s){if(currentScores[s.id])setScoreIn('score-grid',s.id,currentScores[s.id],null);});
+    currentScreenshots=(d.screenshots||[]).map(function(s){return{name:s.name,dataUrl:s.dataUrl};});renderScreenshotGrid();
+    var banner=document.getElementById('draft-banner');if(banner)banner.style.display='flex';
+  }catch(e){console.warn('Draft restore failed',e);}
+}
+function clearDraft(){localStorage.removeItem('tj-draft');var b=document.getElementById('draft-banner');if(b)b.style.display='none';resetForm();}
+
+function hookAutosave(){
+  document.querySelectorAll('#view-form input,#view-form select,#view-form textarea').forEach(function(el){
+    el.addEventListener('input',triggerAutosave);el.addEventListener('change',triggerAutosave);
+  });
+}
+
+function resetForm(){
+  editingId=null;localStorage.removeItem('tj-draft');
+  var b=document.getElementById('draft-banner');if(b)b.style.display='none';
+  ['f-date','f-time','f-asset','f-session','f-dow','f-direction','f-market-condition','f-volatility','f-news','f-volume','f-setup-notes','f-management-notes','f-psych-before','f-psych-during','f-psych-after','f-review-good','f-review-improve','f-review-lesson','f-ss-notes'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('f-date').value=todayStr();
+  selectedOutcome='';document.querySelectorAll('.outcome-btn').forEach(function(b){b.className='outcome-btn';});
+  initSelectedTags();document.querySelectorAll('.tag-btn').forEach(function(b){b.className='tag-btn';});
+  currentScores={};
+  var ps=JSON.parse(localStorage.getItem('tj-presession-'+todayStr())||'null');
+  var badge=document.getElementById('ext-autofill-badge');
+  if(ps&&ps.scores){currentScores=JSON.parse(JSON.stringify(ps.scores));initScores('score-grid',currentScores);if(badge)badge.style.display='inline';}
+  else{initScores('score-grid',currentScores);if(badge)badge.style.display='none';}
+  initSsSections();
+  updateSessionStateBanner();
+}
+
+function saveTrade(){
+  var g=function(id){var el=document.getElementById(id);return el?el.value:'';};
+  var trade={id:editingId||Date.now().toString(),date:g('f-date'),time:g('f-time'),asset:g('f-asset'),session:g('f-session'),dow:g('f-dow'),direction:g('f-direction'),outcome:selectedOutcome,marketCondition:g('f-market-condition'),volatility:g('f-volatility'),news:g('f-news'),volume:g('f-volume'),tags:JSON.parse(JSON.stringify(selectedTags)),scores:JSON.parse(JSON.stringify(currentScores)),ssSections:currentSsSections.map(function(s){return{id:s.id,label:s.label,type:s.type,dataUrl:s.dataUrl,annotation:s.annotation};}),notes:{setup:g('f-setup-notes'),management:g('f-management-notes'),psychBefore:g('f-psych-before'),psychDuring:g('f-psych-during'),psychAfter:g('f-psych-after'),reviewGood:g('f-review-good'),reviewImprove:g('f-review-improve'),reviewLesson:g('f-review-lesson')}};
+  if(editingId){var idx=trades.findIndex(function(t){return t.id===editingId;});if(idx>-1)trades[idx]=trade;}else trades.unshift(trade);
+  localStorage.setItem('tj-trades',JSON.stringify(trades));localStorage.removeItem('tj-draft');
+  renderTradeList();switchView('log');setTimeout(function(){selectTrade(trade.id);},50);
+}
+
+function tradeMatchesFilter(t,f){
+  if(!f)return true;
+  if(f==='pending')return t.outcome==='Pending';
+  if(f==='needs-review')return tradeNeedsReview(t);
+  if(['Win','Loss','Breakeven'].indexOf(f)>-1)return t.outcome===f;
+  if(['Long','Short'].indexOf(f)>-1)return t.direction===f;
+  return Object.values(t.tags||{}).reduce(function(a,b){return a.concat(b);}, []).indexOf(f)>-1;
+}
+
+function toggleLogFilter(val){
+  logFilter=(logFilter===val)?null:val;
+  document.querySelectorAll('.filter-chip').forEach(function(c){c.classList.remove('active-filter');});
+  if(logFilter){var chip=document.getElementById('fc-'+val.replace('+','plus').replace('-','dash'));if(chip)chip.classList.add('active-filter');}
+  renderTradeList();
+}
+function clearLogFilter(){logFilter=null;document.querySelectorAll('.filter-chip').forEach(function(c){c.classList.remove('active-filter');});renderTradeList();}
+
+function toggleReviewFilter(tag){
+  if(activeReviewFilters.has(tag))activeReviewFilters.delete(tag);else activeReviewFilters.add(tag);
+  syncReviewFilterUI();renderReview();
+}
+function clearReviewFilter(){
+  activeReviewFilters.clear();syncReviewFilterUI();renderReview();
+}
+function syncReviewFilterUI(){
+  // Sync outcome/direction/quality styled buttons
+  document.querySelectorAll('.filter-chip-outcome').forEach(function(btn){
+    var txt=btn.textContent.trim();
+    var map={'WIN':'Win','LOSS':'Loss','BREAKEVEN':'Breakeven','PENDING':'Pending','LONG':'Long','SHORT':'Short','A+':'A+','A':'A','B':'B','C':'C'};
+    var val=map[txt]||txt;
+    if(activeReviewFilters.has(val))btn.classList.add('active-filter');else btn.classList.remove('active-filter');
+  });
+  // Active count badge
+  var count=activeReviewFilters.size;
+  var badge=document.getElementById('review-active-count');
+  if(badge){badge.textContent=count+' active';badge.className='filter-active-count'+(count>0?' visible':'');}
+  // Active tags row
+  var row=document.getElementById('review-active-tags');
+  var list=document.getElementById('review-active-tags-list');
+  if(row&&list){
+    if(count>0){
+      row.style.display='flex';list.innerHTML='';
+      activeReviewFilters.forEach(function(f){
+        var pill=document.createElement('span');
+        pill.style.cssText='font-family:var(--mono);font-size:9px;padding:3px 8px;border-radius:3px;background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent);cursor:pointer;';
+        pill.textContent=f+' ✕';pill.onclick=function(){toggleReviewFilter(f);};
+        list.appendChild(pill);
+      });
+    } else {row.style.display='none';}
+  }
+}
+function renderReviewFilterChips(){
+  // Only setup/ICT-specific tags — not outcomes (those have styled buttons)
+  var c=document.getElementById('review-filter-chips');if(!c)return;c.innerHTML='';
+  var allTags=new Set();
+  var skipOutcomes=new Set(['Win','Loss','Pending','Breakeven','Long','Short','A+','A','B','C','Invalid']);
+  trades.forEach(function(t){Object.values(t.tags||{}).forEach(function(arr){arr.forEach(function(tag){if(!skipOutcomes.has(tag))allTags.add(tag);});});});
+  allTags.forEach(function(tag){
+    var chip=document.createElement('div');
+    chip.className='filter-chip'+(activeReviewFilters.has(tag)?' active-filter':'');
+    chip.textContent=tag;chip.onclick=function(){toggleReviewFilter(tag);};c.appendChild(chip);
+  });
+  syncReviewFilterUI();
+}
+
+function renderTradeList(){
+  var body=document.getElementById('trade-list-body');
+  var filtered=trades.filter(function(t){return tradeMatchesFilter(t,logFilter);});
+  document.getElementById('trade-count').textContent=filtered.length+'/'+trades.length;
+  body.innerHTML='';
+  if(!filtered.length){body.innerHTML='<div style="padding:24px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--text-dim);">No trades match filter</div>';return;}
+  filtered.forEach(function(t){
+    var card=document.createElement('div');card.className='trade-card';card.id='card-'+t.id;
+    var quality=(t.tags['entry-quality']||[])[0]||'';
+    var setup=(t.tags['setup']||[])[0]||'';
+    var dirClass=t.direction==='Long'?'dir-long':t.direction==='Short'?'dir-short':'';
+    var oc=t.outcome==='Win'?'var(--green)':t.outcome==='Loss'?'var(--red)':t.outcome==='Pending'?'var(--orange)':'var(--amber)';
+    var isPending=t.outcome==='Pending';var needsReview=tradeNeedsReview(t);
+    card.innerHTML='<div class="trade-card-top"><div class="trade-card-asset">'+(t.asset||'—')+'</div><div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">'
+      +(t.direction?'<div class="trade-card-dir '+dirClass+'">'+t.direction.toUpperCase()+'</div>':'')
+      +(isPending?'<span class="status-badge badge-pending">PENDING</span>':(t.outcome?'<div style="font-family:var(--mono);font-size:9px;color:'+oc+';font-weight:600;">'+t.outcome.toUpperCase()+'</div>':''))
+      +(needsReview?'<span class="status-badge badge-needs-review">REVIEW</span>':'')
+      +'</div></div>'
+      +'<div class="trade-card-meta">'+(t.date||'')+' '+(t.time||'')+' · '+(t.session||'')+'</div>'
+      +'<div class="trade-card-tags">'+(quality?'<span class="mini-tag" style="color:var(--accent);">'+quality+'</span>':'')+(setup?'<span class="mini-tag">'+setup+'</span>':'')+'</div>';
+    card.onclick=function(){selectTrade(t.id);};body.appendChild(card);
+  });
+}
+
+function selectTrade(id){
+  document.querySelectorAll('.trade-card').forEach(function(c){c.classList.remove('selected');});
+  var cardEl=document.getElementById('card-'+id);if(cardEl)cardEl.classList.add('selected');
+  var t=trades.find(function(tr){return tr.id===id;});if(!t)return;renderDetailPanel(t);
+}
+
+function renderDetailPanel(t){
+  var panel=document.getElementById('detail-panel');
+  var oc=t.outcome==='Win'?'var(--green)':t.outcome==='Loss'?'var(--red)':t.outcome==='Pending'?'var(--orange)':'var(--amber)';
+  var dirClass=t.direction==='Long'?'dir-long':t.direction==='Short'?'dir-short':'';
+  var needsReview=tradeNeedsReview(t);
+  var html='';
+  if(t.outcome==='Pending')html+='<div class="alert-banner banner-pending">🟠 Trade is PENDING — return to complete after it closes.</div>';
+  if(needsReview)html+='<div class="alert-banner banner-review">⚠ NEEDS FULL REVIEW — post-trade reflection not completed.</div>';
+  html+='<div class="detail-trade-header"><div><div class="detail-asset">'+(t.asset||'—')+'</div><div class="detail-meta">'+(t.date||'')+' '+(t.time||'')+' · '+(t.session||'')+' · '+(t.dow||'')+'</div></div>'
+    +'<div style="display:flex;gap:8px;align-items:center;">'
+    +(t.direction?'<div class="trade-card-dir '+dirClass+'" style="font-size:12px;padding:4px 12px;">'+t.direction.toUpperCase()+'</div>':'')
+    +(t.outcome?'<div style="font-family:var(--mono);font-size:14px;font-weight:700;color:'+oc+';">'+t.outcome.toUpperCase()+'</div>':'')
+    +'<button class="btn btn-ghost btn-sm" onclick="editTrade(\''+t.id+'\')">Edit</button>'
+    +'<button class="btn btn-danger btn-sm" onclick="deleteTrade(\''+t.id+'\')">Delete</button>'
+    +'</div></div>';
+  var ctx=[t.marketCondition,t.volatility,t.news,t.volume].filter(Boolean);
+  if(ctx.length)html+='<div class="detail-section"><div class="detail-section-title">Market Context</div><div class="detail-tags">'+ctx.map(function(f){return'<span class="detail-tag">'+f+'</span>';}).join('')+'</div></div>';
+  var structTags=['htf-bias','ltf-bias','price-location','liquidity-context','trend-align'].reduce(function(a,k){return a.concat(t.tags[k]||[]);}, []);
+  if(structTags.length)html+='<div class="detail-section"><div class="detail-section-title">Market Structure</div><div class="detail-tags">'+structTags.map(function(f){return'<span class="detail-tag">'+f+'</span>';}).join('')+'</div></div>';
+  var setupTags=['setup','entry-trigger','confirmation','entry-quality'].reduce(function(a,k){return a.concat(t.tags[k]||[]);}, []);
+  if(setupTags.length||t.notes&&t.notes.setup)html+='<div class="detail-section"><div class="detail-section-title">Setup & Entry</div>'+(setupTags.length?'<div class="detail-tags" style="margin-bottom:10px;">'+setupTags.map(function(f){return'<span class="detail-tag">'+f+'</span>';}).join('')+'</div>':'')+(t.notes&&t.notes.setup?'<div class="detail-note">'+t.notes.setup+'</div>':'')+'</div>';
+  var mgmtTags=['management','management-quality','execution'].reduce(function(a,k){return a.concat(t.tags[k]||[]);}, []);
+  if(mgmtTags.length||t.notes&&t.notes.management)html+='<div class="detail-section"><div class="detail-section-title">Trade Management</div>'+(mgmtTags.length?'<div class="detail-tags" style="margin-bottom:10px;">'+mgmtTags.map(function(f){return'<span class="detail-tag">'+f+'</span>';}).join('')+'</div>':'')+(t.notes&&t.notes.management?'<div class="detail-note">'+t.notes.management+'</div>':'')+'</div>';
+  if(t.ssSections&&t.ssSections.filter(function(s){return s.dataUrl;}).length){
+    html+='<div class="detail-section"><div class="detail-section-title">Chart Screenshots</div>';
+    t.ssSections.filter(function(s){return s.dataUrl||s.annotation;}).forEach(function(s){
+      html+='<div style="margin-bottom:14px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;overflow:hidden;">'
+        +'<div style="padding:8px 12px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:'+(s.type==='fixed'?'var(--accent)':s.type==='auto'?'var(--amber)':'var(--purple)')+';">'+s.label+'</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">'
+        +(s.dataUrl?'<div style="cursor:pointer;" onclick="openLightbox(\''+s.dataUrl.replace(/'/g,"\\'")+'\')"><img src="'+s.dataUrl+'" style="width:100%;display:block;"></div>':'<div style="background:var(--surface3);display:flex;align-items:center;justify-content:center;min-height:80px;font-family:var(--mono);font-size:9px;color:var(--text-dim);">No image</div>')
+        +(s.annotation?'<div style="padding:12px;font-family:var(--sans);font-size:12px;line-height:1.65;color:var(--text);white-space:pre-wrap;">'+s.annotation+'</div>':'<div style="padding:12px;font-family:var(--mono);font-size:10px;color:var(--text-dim);">No annotation</div>')
+        +'</div></div>';
+    });
+    html+='</div>';
+  }
+  var hasPsych=['psych-before-emotion','psych-before-drivers','psych-during-emotion','psych-during-drivers','psych-after-emotion','psych-after-reaction'].some(function(k){return(t.tags[k]||[]).length>0;})||(t.notes&&(t.notes.psychBefore||t.notes.psychDuring||t.notes.psychAfter));
+  if(hasPsych){
+    var phases=[{label:'Before Entry',cls:'phase-before-label',ek:'psych-before-emotion',dk:'psych-before-drivers',note:t.notes&&t.notes.psychBefore},{label:'During Trade',cls:'phase-during-label',ek:'psych-during-emotion',dk:'psych-during-drivers',note:t.notes&&t.notes.psychDuring},{label:'After Exit',cls:'phase-after-label',ek:'psych-after-emotion',dk:'psych-after-reaction',note:t.notes&&t.notes.psychAfter}];
+    html+='<div class="detail-section"><div class="detail-section-title">Psychology</div><div class="psych-read-grid">'+phases.map(function(p){var tags=(t.tags[p.ek]||[]).concat(t.tags[p.dk]||[]);return'<div class="psych-read-block"><div class="psych-read-phase '+p.cls+'">'+p.label+'</div>'+(tags.length?'<div class="detail-tags" style="margin-bottom:8px;">'+tags.map(function(f){return'<span class="detail-tag">'+f+'</span>';}).join('')+'</div>':'')+(p.note?'<div class="detail-note" style="font-size:12px;">'+p.note+'</div>':'<div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">—</div>')+'</div>';}).join('')+'</div></div>';
+  }
+  var discTags=['disc-before','disc-during','disc-after'].reduce(function(a,k){return a.concat(t.tags[k]||[]);}, []);
+  if(discTags.length)html+='<div class="detail-section"><div class="detail-section-title">Discipline</div><div class="detail-tags">'+discTags.map(function(f){return'<span class="detail-tag">'+f+'</span>';}).join('')+'</div></div>';
+  var mentalTags=['mentality-state','mentality-risk','mentality-outcome','mentality-identity'].reduce(function(a,k){return a.concat(t.tags[k]||[]);}, []);
+  if(mentalTags.length)html+='<div class="detail-section"><div class="detail-section-title">Mentality</div><div class="detail-tags">'+mentalTags.map(function(f){return'<span class="detail-tag">'+f+'</span>';}).join('')+'</div></div>';
+  var hasScores=Object.values(t.scores||{}).some(function(v){return v>0;});
+  if(hasScores)html+='<div class="detail-section"><div class="detail-section-title">External Conditions</div><div class="detail-scores">'+SCORES.map(function(s){var val=(t.scores||{})[s.id]||0;return'<div class="detail-score-item"><div class="detail-score-name">'+s.label+'</div><div class="detail-score-pips">'+[1,2,3,4,5].map(function(n){return'<div class="detail-score-pip'+(n<=val?' on':'')+'"></div>';}).join('')+'</div></div>';}).join('')+'</div></div>';
+  if(t.notes&&(t.notes.reviewGood||t.notes.reviewImprove||t.notes.reviewLesson)){
+    html+='<div class="detail-section"><div class="detail-section-title">Post-Trade Review</div>'
+      +(t.notes.reviewGood?'<div style="margin-bottom:10px;"><div style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:5px;">What I Did Well</div><div class="detail-note">'+t.notes.reviewGood+'</div></div>':'')
+      +(t.notes.reviewImprove?'<div style="margin-bottom:10px;"><div style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:5px;">What I\'d Do Differently</div><div class="detail-note">'+t.notes.reviewImprove+'</div></div>':'')
+      +(t.notes.reviewLesson?'<div><div style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:5px;">Key Lesson</div><div class="detail-note">'+t.notes.reviewLesson+'</div></div>':'')
+      +'</div>';
+  } else if(t.outcome!=='Pending'){
+    html+='<div class="detail-section"><div class="detail-section-title" style="color:var(--amber);">Post-Trade Review — Not Completed</div><div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">Click Edit to add your post-trade reflection.</div></div>';
+  }
+  panel.innerHTML=html;
+}
+
+function editTrade(id){
+  var t=trades.find(function(tr){return tr.id===id;});if(!t)return;
+  editingId=id;switchView('form');
+  var sv=function(id,val){var el=document.getElementById(id);if(el&&val!=null)el.value=val;};
+  sv('f-date',t.date);sv('f-time',t.time);sv('f-asset',t.asset);sv('f-session',t.session);sv('f-dow',t.dow);sv('f-direction',t.direction);
+  sv('f-market-condition',t.marketCondition);sv('f-volatility',t.volatility);sv('f-news',t.news);sv('f-volume',t.volume);
+  if(t.notes){sv('f-setup-notes',t.notes.setup);sv('f-management-notes',t.notes.management);sv('f-psych-before',t.notes.psychBefore);sv('f-psych-during',t.notes.psychDuring);sv('f-psych-after',t.notes.psychAfter);sv('f-ss-notes',t.notes.screenshots);sv('f-review-good',t.notes.reviewGood);sv('f-review-improve',t.notes.reviewImprove);sv('f-review-lesson',t.notes.reviewLesson);}
+  selectedOutcome=t.outcome||'';
+  document.querySelectorAll('.outcome-btn').forEach(function(b){b.className='outcome-btn';if(b.dataset.val===t.outcome){if(t.outcome==='Win')b.className='outcome-btn sel-win';else if(t.outcome==='Loss')b.className='outcome-btn sel-loss';else if(t.outcome==='Breakeven')b.className='outcome-btn sel-be';else b.className='outcome-btn sel-pending';}});
+  initSelectedTags();
+  Object.keys(t.tags||{}).forEach(function(key){(t.tags[key]||[]).forEach(function(val){selectedTags[key]=selectedTags[key]||[];if(selectedTags[key].indexOf(val)<0)selectedTags[key].push(val);var btn=document.querySelector('.tag-btn[data-key="'+key+'"][data-val="'+val+'"]');if(btn){var cc=(TAG_COLOR_MAP[key]||{})[val]||'';btn.className='tag-btn selected'+(cc?' '+cc:'');}});});
+  currentScores=JSON.parse(JSON.stringify(t.scores||{}));SCORES.forEach(function(s){if(currentScores[s.id])setScoreIn('score-grid',s.id,currentScores[s.id],null);});
+  // Restore structured screenshots
+  if(t.ssSections&&t.ssSections.length){
+    currentSsSections=t.ssSections.map(function(s){return{id:s.id,label:s.label,type:s.type,dataUrl:s.dataUrl||null,annotation:s.annotation||''};});
+    renderSsSections();
+  } else {
+    initSsSections();
+  }
+  updateSessionStateBanner();
+}
+
+function deleteTrade(id){
+  if(!confirm('Delete this trade? Cannot be undone.'))return;
+  trades=trades.filter(function(t){return t.id!==id;});
+  localStorage.setItem('tj-trades',JSON.stringify(trades));renderTradeList();
+  document.getElementById('detail-panel').innerHTML='<div class="empty-state"><div class="empty-state-icon">◫</div><div>Select a trade</div></div>';
+}
+
+function renderReview(){
+  renderReviewFilterChips();
+  var grid=document.getElementById('review-grid');grid.innerHTML='';
+  var filtered=activeReviewFilters.size>0?trades.filter(function(t){return[...activeReviewFilters].every(function(f){if(['Win','Loss','Pending','Breakeven'].indexOf(f)>-1)return t.outcome===f;return Object.values(t.tags||{}).reduce(function(a,b){return a.concat(b);}, []).indexOf(f)>-1;});}):trades;
+  if(!filtered.length){grid.innerHTML='<div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);padding:20px;">No trades match filter.</div>';return;}
+  filtered.forEach(function(t){
+    var card=document.createElement('div');card.className='review-card';
+    var quality=(t.tags['entry-quality']||[])[0]||'';
+    var qClass={'A+':'q-aplus','A':'q-a','B':'q-b','C':'q-c','Invalid':'q-invalid'}[quality]||'';
+    var setup=(t.tags['setup']||[]).slice(0,2);
+    var oc=t.outcome==='Win'?'var(--green)':t.outcome==='Loss'?'var(--red)':t.outcome==='Pending'?'var(--orange)':'var(--amber)';
+    var needsReview=tradeNeedsReview(t);
+    card.innerHTML='<div class="review-card-top"><div class="review-card-asset" style="color:'+(t.direction==='Long'?'var(--green)':t.direction==='Short'?'var(--red)':'var(--text)')+';">'+(t.asset||'—')+'</div>'
+      +'<div style="display:flex;gap:5px;align-items:center;">'+(quality?'<span class="quality-badge '+qClass+'">'+quality+'</span>':'')+(t.outcome?'<span style="font-family:var(--mono);font-size:10px;font-weight:700;color:'+oc+';">'+t.outcome.toUpperCase()+'</span>':'')+(needsReview?'<span class="status-badge badge-needs-review" style="font-size:8px;padding:1px 4px;">REVIEW</span>':'')+'</div></div>'
+      +'<div class="review-card-date">'+(t.date||'')+' · '+(t.session||'')+'</div>'
+      +'<div class="review-card-tags" style="margin-top:8px;">'+setup.map(function(s){return'<span class="mini-tag">'+s+'</span>';}).join('')+'</div>';
+    card.onclick=function(){switchView('log');setTimeout(function(){selectTrade(t.id);},50);};grid.appendChild(card);
+  });
+}
+
+function renderCalendar(){
+  var months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-month-label').textContent=months[calMonth]+' '+calYear;
+  var grid=document.getElementById('cal-grid');grid.innerHTML='';
+  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(function(d){var dl=document.createElement('div');dl.className='cal-day-label';dl.textContent=d;grid.appendChild(dl);});
+  var firstDay=new Date(calYear,calMonth,1).getDay();
+  var daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  var today=new Date();
+  var byDate={};trades.forEach(function(t){if(t.date)byDate[t.date]=(byDate[t.date]||[]).concat([t]);});
+  for(var i=0;i<firstDay;i++){var e=document.createElement('div');e.className='cal-cell other-month';grid.appendChild(e);}
+  for(var d=1;d<=daysInMonth;d++){
+    var ds=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var cell=document.createElement('div');cell.className='cal-cell';
+    var isToday=today.getFullYear()===calYear&&today.getMonth()===calMonth&&today.getDate()===d;
+    if(isToday)cell.classList.add('today');
+    var dayTrades=byDate[ds]||[];if(dayTrades.length)cell.classList.add('has-trades');
+    cell.innerHTML='<div class="cal-cell-num">'+d+'</div>';
+    dayTrades.slice(0,4).forEach(function(t){
+      var dot=document.createElement('div');
+      var cls=t.outcome==='Win'?'dot-win':t.outcome==='Loss'?'dot-loss':t.outcome==='Pending'?'dot-pending':'dot-be';
+      dot.className='cal-trade-dot '+cls;dot.textContent=(t.asset||'?')+' '+(t.direction||'');cell.appendChild(dot);
+    });
+    if(dayTrades.length>4){var more=document.createElement('div');more.className='cal-trade-dot';more.style.color='var(--text-dim)';more.textContent='++'+(dayTrades.length-4)+' more';cell.appendChild(more);}
+    (function(ds2,dt){cell.onclick=function(){if(!dt.length)return;switchView('log');setTimeout(function(){renderTradeList();selectTrade(dt[0].id);},50);};} )(ds,dayTrades);
+    grid.appendChild(cell);
+  }
+}
+function calPrev(){calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCalendar();}
+function calNext(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCalendar();}
+
+function renderJournal(){
+  var wrap=document.getElementById('journal-wrap');wrap.innerHTML='';
+  var allDates=new Set();trades.forEach(function(t){if(t.date)allDates.add(t.date);});
+  var jd=JSON.parse(localStorage.getItem('tj-journal')||'{}');Object.keys(jd).forEach(function(d){allDates.add(d);});
+  allDates.add(todayStr());
+  var sorted=[...allDates].sort(function(a,b){return b.localeCompare(a);});
+  sorted.forEach(function(date){
+    var dayTrades=trades.filter(function(t){return t.date===date;});
+    var jEntry=jd[date]||{};
+    var ps=JSON.parse(localStorage.getItem('tj-presession-'+date)||'null');
+    var block=document.createElement('div');block.className='journal-day-block';
+    var dateObj=new Date(date+'T12:00:00');
+    var dayLabel=dateObj.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+    var psHTML='';
+    if(ps){
+      var psImgs='';
+      if(ps.screenshots&&ps.screenshots.length){psImgs='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">'+ps.screenshots.map(function(ss){return'<img src="'+ss.dataUrl+'" style="height:60px;border-radius:3px;border:1px solid var(--border2);cursor:pointer;" onclick="openLightbox(\''+ss.dataUrl.replace(/'/g,"\\'")+'\')"/>';}).join('')+'</div>';}
+      psHTML='<div class="journal-presession"><div class="journal-section-label" style="margin-bottom:8px;color:var(--accent);">Pre-Session Check-In</div>'
+        +(ps.mktBias?'<div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-bottom:4px;">Bias: <span style="color:var(--text)">'+ps.mktBias+'</span></div>':'')
+        +(ps.instruments?'<div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-bottom:4px;">Watching: <span style="color:var(--text)">'+ps.instruments+'</span></div>':'')
+        +(ps.idealSetup?'<div style="font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-bottom:4px;">Ideal Setup: <span style="color:var(--amber)">'+ps.idealSetup+'</span></div>':'')
+        +(ps.journalNote?'<div style="font-family:var(--sans);font-size:12px;color:var(--text);margin-top:8px;line-height:1.7;white-space:pre-wrap;">'+ps.journalNote+'</div>':'')
+        +psImgs+'</div>';
+    }
+    var tHTML=dayTrades.length?'<div><div class="journal-section-label">Trades ('+dayTrades.length+')</div><div class="journal-trades-today">'+dayTrades.map(function(t){var oc=t.outcome==='Win'?'var(--green)':t.outcome==='Loss'?'var(--red)':t.outcome==='Pending'?'var(--orange)':'var(--amber)';return'<div class="journal-trade-chip" onclick="switchView(\'log\');setTimeout(function(){selectTrade(\''+t.id+'\');},100);" style="border-color:'+oc+';color:'+oc+';">'+(t.asset||'?')+' '+(t.direction||'')+' '+(t.outcome?'· '+t.outcome:'')+'</div>';}).join('')+'</div></div>':'';
+    block.innerHTML='<div class="journal-day-header"><div class="journal-day-date">'+dayLabel+'</div><button class="btn btn-ghost btn-sm" onclick="saveJournalEntry(\''+date+'\')">Save</button></div>'
+      +'<div class="journal-day-body">'+psHTML+tHTML
+      +'<div><div class="journal-section-label">Open Entry</div><div class="journal-entry-area"><textarea id="journal-open-'+date+'" placeholder="Thoughts, observations, anything on your mind...">'+(jEntry.open||'')+'</textarea></div></div>'
+      +'<div><div class="journal-section-label">EOD Reflection</div><div class="journal-entry-area"><textarea id="journal-eod-'+date+'" placeholder="End of day: what worked, what to carry forward...">'+(jEntry.eod||'')+'</textarea></div></div>'
+      +'</div>';
+    wrap.appendChild(block);
+  });
+}
+function saveJournalEntry(date){
+  var jd=JSON.parse(localStorage.getItem('tj-journal')||'{}');
+  jd[date]={open:document.getElementById('journal-open-'+date)?document.getElementById('journal-open-'+date).value:'',eod:document.getElementById('journal-eod-'+date)?document.getElementById('journal-eod-'+date).value:''};
+  localStorage.setItem('tj-journal',JSON.stringify(jd));
+  var ind=document.getElementById('autosave-indicator');ind.className='autosave-dot saved';ind.textContent='Journal Saved';
+  setTimeout(function(){ind.className='autosave-dot';ind.textContent='Autosave on';},2000);
+}
+
+function checkAndShowPresession(){
+  var today=todayStr();
+  if(localStorage.getItem('tj-presession-last')===today)return;
+  if(localStorage.getItem('tj-presession-'+today))return;
+  showPresession();
+}
+function showPresession(){
+  var today=todayStr();
+  var dateObj=new Date(today+'T12:00:00');
+  document.getElementById('presession-date-label').textContent=dateObj.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  psScores={};psChecked=new Set();psEmotions=[];psDrivers=[];psScreenshots=[];
+  initScores('ps-score-grid',psScores);
+  // Emotion tags
+  var emoGrid=document.getElementById('ps-emotion-tags');emoGrid.innerHTML='';
+  TAGS['psych-before-emotion'].forEach(function(tag){var btn=document.createElement('button');btn.className='tag-btn';btn.textContent=tag;btn.onclick=function(){if(psEmotions.indexOf(tag)>-1){psEmotions=psEmotions.filter(function(x){return x!==tag;});btn.className='tag-btn';}else{psEmotions.push(tag);btn.className='tag-btn selected';}};emoGrid.appendChild(btn);});
+  // Driver tags
+  var drvGrid=document.getElementById('ps-driver-tags');drvGrid.innerHTML='';
+  TAGS['psych-before-drivers'].forEach(function(tag){var btn=document.createElement('button');btn.className='tag-btn';btn.textContent=tag;btn.onclick=function(){if(psDrivers.indexOf(tag)>-1){psDrivers=psDrivers.filter(function(x){return x!==tag;});btn.className='tag-btn';}else{psDrivers.push(tag);btn.className='tag-btn selected';}};drvGrid.appendChild(btn);});
+  // Editable routine
+  renderRoutineChecklist();
+  // Reset fields
+  ['ps-journal','ps-instruments','ps-levels','ps-ideal-setup'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var mb=document.getElementById('ps-mkt-bias');if(mb)mb.value='';
+  // Reset screenshots
+  renderPsScreenshotGrid();
+  document.getElementById('presession-modal').classList.add('open');
+}
+
+function renderRoutineChecklist(){
+  var cl=document.getElementById('ps-checklist');cl.innerHTML='';
+  var items=getRoutineItems();
+  items.forEach(function(item,idx){
+    var el=document.createElement('div');el.className='ps-routine-item';
+    el.innerHTML='<div class="check-box" style="width:14px;height:14px;border:1.5px solid var(--border2);border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:white;transition:all .12s;"></div>'
+      +'<div class="check-label" style="font-family:var(--mono);font-size:10px;color:var(--text-muted);flex:1;">'+item+'</div>'
+      +'<button class="ps-routine-del" onclick="removeRoutineItem('+idx+')" title="Remove">✕</button>';
+    el.querySelector('.check-box').parentElement.querySelector('.check-label');
+    var box=el.querySelector('.check-box');
+    var clickArea=el;
+    clickArea.onclick=function(e){
+      if(e.target.classList.contains('ps-routine-del'))return;
+      if(psChecked.has(item)){psChecked.delete(item);el.classList.remove('checked');box.textContent='';box.style.borderColor='';box.style.background='';}
+      else{psChecked.add(item);el.classList.add('checked');box.textContent='✓';box.style.borderColor='var(--green)';box.style.background='var(--green)';}
+    };
+    cl.appendChild(el);
+  });
+}
+
+function addRoutineItem(){
+  var inp=document.getElementById('ps-routine-new');var val=inp.value.trim();if(!val)return;
+  var items=getRoutineItems();items.push(val);saveRoutineItems(items);inp.value='';renderRoutineChecklist();
+}
+
+function removeRoutineItem(idx){
+  var items=getRoutineItems();items.splice(idx,1);saveRoutineItems(items);renderRoutineChecklist();
+}
+
+// Presession screenshots
+function handlePsScreenshots(e){
+  Array.from(e.target.files).forEach(function(f){
+    var r=new FileReader();r.onload=function(ev){psScreenshots.push({name:f.name,dataUrl:ev.target.result});renderPsScreenshotGrid();};r.readAsDataURL(f);
+  });e.target.value='';
+}
+
+function renderPsScreenshotGrid(){
+  var grid=document.getElementById('ps-screenshot-grid');if(!grid)return;grid.innerHTML='';
+  psScreenshots.forEach(function(ss,i){
+    var thumb=document.createElement('div');thumb.className='ps-ss-thumb';
+    var safe=ss.dataUrl.replace(/'/g,"\\'");
+    thumb.innerHTML='<img src="'+ss.dataUrl+'" alt="'+ss.name+'" onclick="openLightbox(\''+safe+'\')">'
+      +'<button class="ps-ss-del" onclick="event.stopPropagation();psScreenshots.splice('+i+',1);renderPsScreenshotGrid();">✕</button>';
+    grid.appendChild(thumb);
+  });
+}
+
+// Hook paste into presession zone too
+document.addEventListener('paste',function(e){
+  // If presession modal is open, paste into ps screenshots
+  var modal=document.getElementById('presession-modal');
+  if(modal&&modal.classList.contains('open')){
+    var items=e.clipboardData?e.clipboardData.items:[];
+    for(var i=0;i<items.length;i++){
+      if(items[i].type.indexOf('image/')===0){
+        var blob=items[i].getAsFile();if(!blob)continue;
+        var r=new FileReader();(function(b){r.onload=function(ev){psScreenshots.push({name:'pasted-'+Date.now()+'.png',dataUrl:ev.target.result});renderPsScreenshotGrid();var dz=document.getElementById('ps-drop-zone');if(dz){dz.classList.add('paste-active');setTimeout(function(){dz.classList.remove('paste-active');},600);}};r.readAsDataURL(b);})(blob);
+      }
+    }
+    return;
+  }
+  // Otherwise paste into trade form screenshots
+  var fitems=e.clipboardData?e.clipboardData.items:[];
+  for(var j=0;j<fitems.length;j++){
+    if(fitems[j].type.indexOf('image/')===0){
+      var fblob=fitems[j].getAsFile();if(!fblob)continue;
+      addScreenshotFromBlob(fblob,'pasted-'+Date.now()+'.png');
+      var dz2=document.getElementById('drop-zone');if(dz2){dz2.classList.add('paste-active');setTimeout(function(){dz2.classList.remove('paste-active');},800);}
+    }
+  }
+});
+function savePresession(){
+  var today=todayStr();
+  var g=function(id){var el=document.getElementById(id);return el?el.value:'';};
+  var psData={date:today,scores:JSON.parse(JSON.stringify(psScores)),emotions:psEmotions,drivers:psDrivers,checklist:[...psChecked],mktBias:g('ps-mkt-bias'),instruments:g('ps-instruments'),levels:g('ps-levels'),idealSetup:g('ps-ideal-setup'),journalNote:g('ps-journal'),screenshots:psScreenshots.map(function(s){return{name:s.name,dataUrl:s.dataUrl};})};
+  localStorage.setItem('tj-presession-'+today,JSON.stringify(psData));
+  localStorage.setItem('tj-presession-last',today);
+  document.getElementById('presession-modal').classList.remove('open');
+}
+function skipPresession(){localStorage.setItem('tj-presession-last',todayStr());document.getElementById('presession-modal').classList.remove('open');}
+
+function openTagEditor(){buildTagEditorUI();document.getElementById('tag-editor-modal').classList.add('open');}
+function closeTagEditor(){document.getElementById('tag-editor-modal').classList.remove('open');rebuildAllTagGrids();}
+function buildTagEditorUI(){
+  var body=document.getElementById('tag-editor-body');body.innerHTML='';
+  Object.keys(TAGS).forEach(function(key){
+    var label=TAG_LABELS[key]||key;
+    var cat=document.createElement('div');cat.className='tag-editor-category';
+    cat.innerHTML='<div class="tag-editor-cat-header" onclick="toggleEditorCat(\''+key+'\')"><div class="tag-editor-cat-label">'+label+'</div><span class="tag-editor-cat-chevron" id="chevron-'+key+'">▾</span></div>'
+      +'<div class="tag-editor-cat-body" id="tec-'+key+'"><div class="tag-editor-pills-row" id="tec-pills-'+key+'"></div>'
+      +'<div class="tag-editor-add"><input type="text" id="tec-input-'+key+'" placeholder="New tag..." onkeydown="if(event.key===\'Enter\')addEditorTag(\''+key+'\')"><button onclick="addEditorTag(\''+key+'\')">+ Add</button></div></div>';
+    body.appendChild(cat);renderEditorPills(key);
+  });
+}
+function toggleEditorCat(key){var b=document.getElementById('tec-'+key);var c=document.getElementById('chevron-'+key);b.classList.toggle('collapsed');c.textContent=b.classList.contains('collapsed')?'▸':'▾';}
+function renderEditorPills(key){
+  var c=document.getElementById('tec-pills-'+key);if(!c)return;c.innerHTML='';
+  (TAGS[key]||[]).forEach(function(tag,i){var p=document.createElement('span');p.className='tag-editor-pill';p.innerHTML=tag+'<button class="tag-editor-pill-del" onclick="removeEditorTag(\''+key+'\','+i+')">✕</button>';c.appendChild(p);});
+}
+function addEditorTag(key){var inp=document.getElementById('tec-input-'+key);var val=inp.value.trim();if(!val||(TAGS[key]||[]).indexOf(val)>-1)return;TAGS[key]=TAGS[key]||[];TAGS[key].push(val);saveTagDefs();renderEditorPills(key);inp.value='';}
+function removeEditorTag(key,idx){TAGS[key].splice(idx,1);saveTagDefs();renderEditorPills(key);}
+function rebuildAllTagGrids(){
+  Object.entries(GRID_MAP).forEach(function(e){initTagGrid(e[0],e[1]);});
+  Object.keys(selectedTags).forEach(function(key){(selectedTags[key]||[]).forEach(function(val){var btn=document.querySelector('.tag-btn[data-key="'+key+'"][data-val="'+val+'"]');if(btn){var cc=(TAG_COLOR_MAP[key]||{})[val]||'';btn.className='tag-btn selected'+(cc?' '+cc:'');}});});
+}
+
+// ─── STRUCTURED SCREENSHOTS ──────────────────────────────────────────────────
+// Tag → screenshot section mapping
+var TAG_SS_MAP={
+  'Order Block':['OB Zone','OB Reaction'],
+  'HTF OB':['HTF OB Zone','HTF OB Reaction'],
+  'HTF FVG':['HTF FVG Zone','HTF FVG Fill'],
+  'Fair Value Gap':['FVG Zone'],
+  'FVG Fill':['FVG Fill'],
+  'IFVG':['IFVG Zone'],
+  'SMT':['SMT Divergence'],
+  'Liquidity Sweep':['Liquidity Level','Post-Sweep Reaction'],
+  'BOS':['BOS Level','BOS Confirmation'],
+  'Distribution':['Distribution Zone'],
+  'Accumulation':['Accumulation Zone'],
+  'Mean Reversion / Reversion to Fair Price':['Fair Price Level'],
+  'Session Sweep':['Session High/Low'],
+  'Macro High/Low Sweep':['Macro Level'],
+  '90 Min H/L Sweep':['90 Min Level'],
+};
+
+var FIXED_SS_SECTIONS=[
+  {id:'htf',label:'HTF Bias',type:'fixed'},
+  {id:'entry',label:'Entry',type:'fixed'},
+  {id:'exit',label:'Exit / Result',type:'fixed'},
+];
+
+// Current SS sections state: [{id, label, type, dataUrl, annotation}]
+var currentSsSections=[];
+var focusedSsSlot=null; // track which slot last clicked for paste
+
+function buildSsSections(){
+  // Start with fixed
+  var sections=FIXED_SS_SECTIONS.map(function(s){return{id:s.id,label:s.label,type:'fixed',dataUrl:null,annotation:''};});
+  // Add tag-based sections — deduplicate
+  var added={};
+  var allSelectedTags=Object.values(selectedTags).reduce(function(a,b){return a.concat(b);},[]);
+  allSelectedTags.forEach(function(tag){
+    var extras=TAG_SS_MAP[tag]||[];
+    extras.forEach(function(label){
+      var key=label.toLowerCase().replace(/\s+/g,'-');
+      if(!added[key]){added[key]=true;sections.push({id:key,label:label,type:'auto',dataUrl:null,annotation:''});}
+    });
+  });
+  // Preserve existing data (images + annotations) when rebuilding
+  sections.forEach(function(s){
+    var existing=currentSsSections.find(function(e){return e.id===s.id;});
+    if(existing){s.dataUrl=existing.dataUrl;s.annotation=existing.annotation;}
+  });
+  // Keep custom sections
+  currentSsSections.filter(function(s){return s.type==='custom';}).forEach(function(s){
+    if(!sections.find(function(e){return e.id===s.id;}))sections.push(s);
+  });
+  currentSsSections=sections;
+  renderSsSections();
+}
+
+function renderSsSections(){
+  var container=document.getElementById('ss-sections');
+  if(!container)return;
+  container.innerHTML='';
+  currentSsSections.forEach(function(s,i){
+    var sec=document.createElement('div');sec.className='ss-section';
+    var labelClass=s.type==='fixed'?'fixed':s.type==='auto'?'auto':'custom';
+    var typeTag=s.type==='fixed'?'FIXED':s.type==='auto'?'AUTO · TAG MATCH':'CUSTOM';
+    var removeBtn=s.type!=='fixed'?'<button class="ss-section-remove" onclick="removeSsSection(\''+s.id+'\')" title="Remove">✕</button>':'';
+    sec.innerHTML='<div class="ss-section-header"><div class="ss-section-label '+labelClass+'">'+s.label+'</div><div style="display:flex;align-items:center;gap:8px;"><span style="font-family:var(--mono);font-size:8px;color:var(--text-dim);">'+typeTag+'</span>'+removeBtn+'</div></div>'
+      +'<div class="ss-section-body">'
+        +'<div class="ss-slot">'
+          +'<div class="ss-slot-label">Screenshot</div>'
+          +'<div class="ss-drop-target'+(s.dataUrl?' has-image':'')+'" id="ss-target-'+s.id+'" onclick="focusSsSlot(\''+s.id+'\')">'
+            +(s.dataUrl
+              ?'<img src="'+s.dataUrl+'" alt="'+s.label+'">'
+                +'<div class="ss-img-overlay">'
+                  +'<button class="ss-img-expand" onclick="event.stopPropagation();openLightbox(\''+s.dataUrl.replace(/'/g,"\\'")+'\')" title="Expand">⤢</button>'
+                  +'<button class="ss-img-del" onclick="event.stopPropagation();clearSsImage(\''+s.id+'\')" title="Remove">✕</button>'
+                +'</div>'
+              :'<input type="file" accept="image/*" onchange="loadSsFile(event,\''+s.id+'\')">'
+                +'<div class="ss-drop-placeholder">Click, drag<br>or Ctrl+V</div>')
+          +'</div>'
+        +'</div>'
+        +'<div class="ss-slot">'
+          +'<div class="ss-slot-label">Annotation / Notes</div>'
+          +'<textarea class="ss-annotation" id="ss-ann-'+s.id+'" placeholder="What does this show? Key observations, price levels, confluence..." onchange="saveSsAnnotation(\''+s.id+'\')" oninput="saveSsAnnotation(\''+s.id+'\')">'+(s.annotation||'')+'</textarea>'
+        +'</div>'
+      +'</div>';
+    container.appendChild(sec);
+  });
+}
+
+function focusSsSlot(id){focusedSsSlot=id;}
+
+function loadSsFile(e,id){
+  var file=e.target.files[0];if(!file)return;
+  var r=new FileReader();r.onload=function(ev){setSsImage(id,ev.target.result);};r.readAsDataURL(file);
+  e.target.value='';
+}
+
+function setSsImage(id,dataUrl){
+  var s=currentSsSections.find(function(s){return s.id===id;});
+  if(s){s.dataUrl=dataUrl;}
+  renderSsSections();
+  triggerAutosave();
+}
+
+function clearSsImage(id){
+  var s=currentSsSections.find(function(s){return s.id===id;});
+  if(s){s.dataUrl=null;}
+  renderSsSections();
+  triggerAutosave();
+}
+
+function saveSsAnnotation(id){
+  var el=document.getElementById('ss-ann-'+id);
+  var s=currentSsSections.find(function(s){return s.id===id;});
+  if(s&&el)s.annotation=el.value;
+  triggerAutosave();
+}
+
+function addCustomSsSection(){
+  var inp=document.getElementById('ss-custom-label');
+  var label=inp.value.trim();if(!label)return;
+  var id='custom-'+label.toLowerCase().replace(/\s+/g,'-')+'-'+Date.now();
+  currentSsSections.push({id:id,label:label,type:'custom',dataUrl:null,annotation:''});
+  inp.value='';
+  renderSsSections();
+}
+
+function removeSsSection(id){
+  currentSsSections=currentSsSections.filter(function(s){return s.id!==id;});
+  renderSsSections();
+}
+
+// Paste into focused slot or first empty fixed slot
+document.addEventListener('paste',function(e){
+  var psModal=document.getElementById('presession-modal');
+  if(psModal&&psModal.classList.contains('open')){
+    var items=e.clipboardData?e.clipboardData.items:[];
+    for(var i=0;i<items.length;i++){
+      if(items[i].type.indexOf('image/')===0){
+        var blob=items[i].getAsFile();if(!blob)continue;
+        var r=new FileReader();(function(b){r.onload=function(ev){psScreenshots.push({name:'pasted-'+Date.now()+'.png',dataUrl:ev.target.result});renderPsScreenshotGrid();var dz=document.getElementById('ps-drop-zone');if(dz){dz.classList.add('paste-active');setTimeout(function(){dz.classList.remove('paste-active');},600);}};r.readAsDataURL(b);})(blob);
+      }
+    }
+    return;
+  }
+  // Paste into structured ss slot
+  var fitems=e.clipboardData?e.clipboardData.items:[];
+  for(var j=0;j<fitems.length;j++){
+    if(fitems[j].type.indexOf('image/')===0){
+      var fblob=fitems[j].getAsFile();if(!fblob)continue;
+      var targetId=focusedSsSlot;
+      if(!targetId){
+        // Find first empty fixed slot
+        var empty=currentSsSections.find(function(s){return!s.dataUrl;});
+        if(empty)targetId=empty.id;
+      }
+      if(targetId){
+        (function(tid,fb){var r=new FileReader();r.onload=function(ev){setSsImage(tid,ev.target.result);};r.readAsDataURL(fb);})(targetId,fblob);
+      }
+      break;
+    }
+  }
+});
+
+// Watch tag changes to rebuild ss sections
+var _origToggleTag=toggleTag;
+toggleTag=function(btn,key,val){
+  _origToggleTag(btn,key,val);
+  buildSsSections();
+  updateSessionStateBanner();
+};
+
+function initSsSections(){currentSsSections=[];buildSsSections();}
+
+// ─── SESSION STATE BANNER ─────────────────────────────────────────────────────
+function updateSessionStateBanner(){
+  var banner=document.getElementById('session-state-banner');if(!banner)return;
+  var today=todayStr();
+  var todayTrades=trades.filter(function(t){return t.date===today;});
+  var consecutive=0;
+  var sorted=todayTrades.slice().sort(function(a,b){return(a.time||'').localeCompare(b.time||'');});
+  for(var i=sorted.length-1;i>=0;i--){
+    if(sorted[i].outcome==='Loss')consecutive++;else break;
+  }
+  var revengeTagged=sorted.length>0&&(sorted[sorted.length-1].tags&&(sorted[sorted.length-1].tags['disc-after']||[]).indexOf('Revenge Trade')>-1);
+  var ps=JSON.parse(localStorage.getItem('tj-presession-'+today)||'null');
+  var lowReadiness=false;
+  if(ps&&ps.scores){var avg=Object.values(ps.scores).reduce(function(a,b){return a+b;},0)/Object.keys(ps.scores).length;if(avg<2.5)lowReadiness=true;}
+  if(consecutive>=3||revengeTagged){
+    banner.style.display='flex';banner.className='session-state-banner warn';
+    banner.innerHTML='⚠ '+consecutive+' consecutive losses today'+(revengeTagged?' · Revenge trade flagged on last entry':'')+'&nbsp;— Are you trading from a clear state?';
+  } else if(consecutive===2||lowReadiness){
+    banner.style.display='flex';banner.className='session-state-banner caution';
+    banner.innerHTML='◈ '+(consecutive===2?'2 consecutive losses':'Low readiness score detected')+' — Check your state before this entry.';
+  } else {
+    banner.style.display='none';
+  }
+}
+
+// ─── WEEKLY REVIEW ────────────────────────────────────────────────────────────
+var weekOffset=0;
+
+function getWeekBounds(offset){
+  var now=new Date();
+  var day=now.getDay();
+  var monday=new Date(now);monday.setDate(now.getDate()-((day+6)%7)+(offset*7));
+  var sunday=new Date(monday);sunday.setDate(monday.getDate()+6);
+  return{start:monday,end:sunday,
+    startStr:monday.toISOString().split('T')[0],
+    endStr:sunday.toISOString().split('T')[0]};
+}
+
+function weeklyPrev(){weekOffset--;renderWeeklyReview();}
+function weeklyNext(){weekOffset++;renderWeeklyReview();}
+
+function renderWeeklyReview(){
+  var bounds=getWeekBounds(weekOffset);
+  var label=bounds.start.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' – '+bounds.end.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  document.getElementById('weekly-nav-label').textContent=label;
+
+  var weekTrades=trades.filter(function(t){return t.date>=bounds.startStr&&t.date<=bounds.endStr;});
+  var body=document.getElementById('weekly-body');body.innerHTML='';
+
+  if(!weekTrades.length){
+    body.innerHTML='<div style="font-family:var(--mono);font-size:11px;color:var(--text-dim);padding:20px;text-align:center;">No trades logged this week.</div>';
+    return;
+  }
+
+  var wins=weekTrades.filter(function(t){return t.outcome==='Win';}).length;
+  var losses=weekTrades.filter(function(t){return t.outcome==='Loss';}).length;
+  var pending=weekTrades.filter(function(t){return t.outcome==='Pending';}).length;
+  var total=weekTrades.length;
+  var winRate=total>0?Math.round((wins/total)*100):0;
+
+  // ── SUMMARY STATS
+  var summaryBlock=document.createElement('div');summaryBlock.className='weekly-block';
+  summaryBlock.innerHTML='<div class="weekly-block-header"><div class="weekly-block-title">Week Summary</div><div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);">'+total+' trades</div></div>'
+    +'<div class="weekly-block-body">'
+    +'<div class="stat-grid">'
+    +'<div class="stat-card"><div class="stat-card-val" style="color:var(--green);">'+wins+'</div><div class="stat-card-label">Wins</div></div>'
+    +'<div class="stat-card"><div class="stat-card-val" style="color:var(--red);">'+losses+'</div><div class="stat-card-label">Losses</div></div>'
+    +(pending?'<div class="stat-card"><div class="stat-card-val" style="color:var(--orange);">'+pending+'</div><div class="stat-card-label">Pending</div></div>':'')
+    +'<div class="stat-card"><div class="stat-card-val" style="color:'+(winRate>=55?'var(--green)':winRate>=40?'var(--amber)':'var(--red)')+';">'+winRate+'%</div><div class="stat-card-label">Win Rate</div></div>'
+    +'<div class="stat-card"><div class="stat-card-val">'+(weekTrades.filter(function(t){return t.tags&&(t.tags['entry-quality']||[]).indexOf('A+')>-1;}).length)+'</div><div class="stat-card-label">A+ Setups</div></div>'
+    +'<div class="stat-card"><div class="stat-card-val">'+(weekTrades.filter(function(t){return tradeNeedsReview(t);}).length)+'</div><div class="stat-card-label" style="color:var(--amber);">Need Review</div></div>'
+    +'</div></div>';
+  body.appendChild(summaryBlock);
+
+  // ── SETUP PERFORMANCE
+  var setupMap={};
+  weekTrades.forEach(function(t){
+    var setups=t.tags&&t.tags['setup']?t.tags['setup']:['(untagged)'];
+    setups.forEach(function(s){
+      if(!setupMap[s])setupMap[s]={wins:0,losses:0,total:0};
+      if(t.outcome==='Win')setupMap[s].wins++;
+      else if(t.outcome==='Loss')setupMap[s].losses++;
+      setupMap[s].total++;
+    });
+  });
+  var setupRows=Object.keys(setupMap).sort(function(a,b){return setupMap[b].total-setupMap[a].total;});
+  if(setupRows.length){
+    var setupBlock=document.createElement('div');setupBlock.className='weekly-block';
+    var setupHTML='<div class="weekly-block-header"><div class="weekly-block-title">Setup Performance</div></div><div class="weekly-block-body"><table class="correlation-table"><thead><tr><th>Setup</th><th>Trades</th><th>Win %</th><th>Distribution</th></tr></thead><tbody>';
+    setupRows.forEach(function(s){
+      var d=setupMap[s];var wr=d.total?Math.round((d.wins/d.total)*100):0;
+      var barColor=wr>=60?'green':wr>=40?'amber':'red';
+      setupHTML+='<tr><td>'+s+'</td><td>'+d.total+'</td><td style="color:'+(wr>=60?'var(--green)':wr>=40?'var(--amber)':'var(--red)')+';">'+wr+'%</td>'
+        +'<td><div class="corr-bar-wrap"><div class="corr-bar '+barColor+'" style="width:'+Math.max(wr,4)+'px;"></div><span style="font-size:9px;color:var(--text-dim);">'+d.wins+'W / '+d.losses+'L</span></div></td></tr>';
+    });
+    setupHTML+='</tbody></table></div>';
+    setupBlock.innerHTML=setupHTML;body.appendChild(setupBlock);
+  }
+
+  // ── PSYCHOLOGICAL STATE CORRELATION
+  var psychMap={};
+  weekTrades.forEach(function(t){
+    var emotions=(t.tags&&t.tags['psych-before-emotion'])||[];
+    emotions.forEach(function(e){
+      if(!psychMap[e])psychMap[e]={wins:0,losses:0,total:0};
+      if(t.outcome==='Win')psychMap[e].wins++;
+      else if(t.outcome==='Loss')psychMap[e].losses++;
+      psychMap[e].total++;
+    });
+  });
+  var psychRows=Object.keys(psychMap).sort(function(a,b){return psychMap[b].total-psychMap[a].total;});
+  if(psychRows.length){
+    var psychBlock=document.createElement('div');psychBlock.className='weekly-block';
+    var psychHTML='<div class="weekly-block-header"><div class="weekly-block-title">Psychology vs Outcome</div><div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);">Pre-entry emotional state correlation</div></div><div class="weekly-block-body"><table class="correlation-table"><thead><tr><th>Emotional State</th><th>Trades</th><th>Win %</th><th>Distribution</th></tr></thead><tbody>';
+    psychRows.forEach(function(p){
+      var d=psychMap[p];var wr=d.total?Math.round((d.wins/d.total)*100):0;
+      var barColor=wr>=60?'green':wr>=40?'amber':'red';
+      psychHTML+='<tr><td>'+p+'</td><td>'+d.total+'</td><td style="color:'+(wr>=60?'var(--green)':wr>=40?'var(--amber)':'var(--red)')+';">'+wr+'%</td>'
+        +'<td><div class="corr-bar-wrap"><div class="corr-bar '+barColor+'" style="width:'+Math.max(wr,4)+'px;"></div><span style="font-size:9px;color:var(--text-dim);">'+d.wins+'W / '+d.losses+'L</span></div></td></tr>';
+    });
+    psychHTML+='</tbody></table></div>';
+    psychBlock.innerHTML=psychHTML;body.appendChild(psychBlock);
+  }
+
+  // ── DISCIPLINE CORRELATION
+  var discMap={};
+  weekTrades.forEach(function(t){
+    var flags=(t.tags&&t.tags['disc-before'])||[];
+    flags.forEach(function(f){
+      if(!discMap[f])discMap[f]={wins:0,losses:0,total:0};
+      if(t.outcome==='Win')discMap[f].wins++;
+      else if(t.outcome==='Loss')discMap[f].losses++;
+      discMap[f].total++;
+    });
+  });
+  var discRows=Object.keys(discMap).filter(function(k){return discMap[k].total>0;}).sort(function(a,b){return discMap[b].total-discMap[a].total;});
+  if(discRows.length){
+    var discBlock=document.createElement('div');discBlock.className='weekly-block';
+    var discHTML='<div class="weekly-block-header"><div class="weekly-block-title">Discipline vs Outcome</div><div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);">Pre-entry discipline correlation</div></div><div class="weekly-block-body"><table class="correlation-table"><thead><tr><th>Discipline Flag</th><th>Trades</th><th>Win %</th><th>Distribution</th></tr></thead><tbody>';
+    discRows.forEach(function(d){
+      var dd=discMap[d];var wr=dd.total?Math.round((dd.wins/dd.total)*100):0;
+      var barColor=wr>=60?'green':wr>=40?'amber':'red';
+      discHTML+='<tr><td>'+d+'</td><td>'+dd.total+'</td><td style="color:'+(wr>=60?'var(--green)':wr>=40?'var(--amber)':'var(--red)')+';">'+wr+'%</td>'
+        +'<td><div class="corr-bar-wrap"><div class="corr-bar '+barColor+'" style="width:'+Math.max(wr,4)+'px;"></div><span style="font-size:9px;color:var(--text-dim);">'+dd.wins+'W / '+dd.losses+'L</span></div></td></tr>';
+    });
+    discHTML+='</tbody></table></div>';
+    discBlock.innerHTML=discHTML;body.appendChild(discBlock);
+  }
+
+  // ── SESSION PERFORMANCE
+  var sessionMap={};
+  weekTrades.forEach(function(t){
+    var s=t.session||'Unknown';
+    if(!sessionMap[s])sessionMap[s]={wins:0,losses:0,total:0};
+    if(t.outcome==='Win')sessionMap[s].wins++;
+    else if(t.outcome==='Loss')sessionMap[s].losses++;
+    sessionMap[s].total++;
+  });
+  var sessionRows=Object.keys(sessionMap).sort(function(a,b){return sessionMap[b].total-sessionMap[a].total;});
+  if(sessionRows.length>1){
+    var sessBlock=document.createElement('div');sessBlock.className='weekly-block';
+    var sessHTML='<div class="weekly-block-header"><div class="weekly-block-title">Session Breakdown</div></div><div class="weekly-block-body"><table class="correlation-table"><thead><tr><th>Session</th><th>Trades</th><th>Win %</th><th>Distribution</th></tr></thead><tbody>';
+    sessionRows.forEach(function(s){
+      var d=sessionMap[s];var wr=d.total?Math.round((d.wins/d.total)*100):0;
+      var barColor=wr>=60?'green':wr>=40?'amber':'red';
+      sessHTML+='<tr><td>'+s+'</td><td>'+d.total+'</td><td style="color:'+(wr>=60?'var(--green)':wr>=40?'var(--amber)':'var(--red)')+';">'+wr+'%</td>'
+        +'<td><div class="corr-bar-wrap"><div class="corr-bar '+barColor+'" style="width:'+Math.max(wr,4)+'px;"></div><span style="font-size:9px;color:var(--text-dim);">'+d.wins+'W / '+d.losses+'L</span></div></td></tr>';
+    });
+    sessHTML+='</tbody></table></div>';
+    sessBlock.innerHTML=sessHTML;body.appendChild(sessBlock);
+  }
+
+  // ── WEEKLY JOURNAL
+  var wkKey='tj-weekly-'+bounds.startStr;
+  var wkData=JSON.parse(localStorage.getItem(wkKey)||'{}');
+  var journalBlock=document.createElement('div');journalBlock.className='weekly-block';
+  journalBlock.innerHTML='<div class="weekly-block-header"><div class="weekly-block-title">Weekly Reflection</div><button class="btn btn-ghost btn-sm" onclick="saveWeeklyJournal(\''+wkKey+'\')">Save</button></div>'
+    +'<div class="weekly-block-body" style="display:flex;flex-direction:column;gap:12px;">'
+    +'<div><div style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;">What was my edge this week?</div><textarea class="weekly-journal" id="wk-edge" placeholder="Where did I have a genuine technical advantage?">'+(wkData.edge||'')+'</textarea></div>'
+    +'<div><div style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;">Where did I leave money on the table?</div><textarea class="weekly-journal" id="wk-missed" placeholder="Missed entries, early exits, management errors...">'+(wkData.missed||'')+'</textarea></div>'
+    +'<div><div style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;">One thing changing next week</div><textarea class="weekly-journal" id="wk-change" placeholder="One specific, actionable adjustment...">'+(wkData.change||'')+'</textarea></div>'
+    +'<div><div style="font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;">Psychological pattern this week</div><textarea class="weekly-journal" id="wk-psych" placeholder="What emotional or behavioral pattern showed up most?">'+(wkData.psych||'')+'</textarea></div>'
+    +'</div>';
+  body.appendChild(journalBlock);
+}
+
+function saveWeeklyJournal(key){
+  var data={
+    edge:document.getElementById('wk-edge')?document.getElementById('wk-edge').value:'',
+    missed:document.getElementById('wk-missed')?document.getElementById('wk-missed').value:'',
+    change:document.getElementById('wk-change')?document.getElementById('wk-change').value:'',
+    psych:document.getElementById('wk-psych')?document.getElementById('wk-psych').value:'',
+  };
+  localStorage.setItem(key,JSON.stringify(data));
+  var ind=document.getElementById('autosave-indicator');ind.className='autosave-dot saved';ind.textContent='Saved';
+  setTimeout(function(){ind.className='autosave-dot';ind.textContent='Autosave on';},2000);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+function exportData(){var blob=new Blob([JSON.stringify(trades,null,2)],{type:'application/json'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='trade-journal-'+todayStr()+'.json';a.click();URL.revokeObjectURL(url);}
+function importData(){document.getElementById('importFile').click();}
+function handleImport(e){var file=e.target.files[0];if(!file)return;var reader=new FileReader();reader.onload=function(ev){try{var imp=JSON.parse(ev.target.result);if(Array.isArray(imp)){if(confirm('Import '+imp.length+' trades? Will merge.')){var ids=new Set(trades.map(function(t){return t.id;}));imp.forEach(function(t){if(!ids.has(t.id))trades.push(t);});trades.sort(function(a,b){return(b.date+b.time).localeCompare(a.date+a.time);});localStorage.setItem('tj-trades',JSON.stringify(trades));renderTradeList();alert('Import complete.');}}}catch(err){alert('Invalid JSON file.');}};reader.readAsText(file);e.target.value='';}
+
+function init(){
+  Object.entries(GRID_MAP).forEach(function(e){initTagGrid(e[0],e[1]);});
+  initSelectedTags();currentScores={};initScores('score-grid',currentScores);
+  document.getElementById('f-date').value=todayStr();
+  initSsSections();
+  renderTradeList();hookAutosave();
+  weekOffset=0;
+  if(localStorage.getItem('tj-draft'))restoreDraft();
+  setTimeout(checkAndShowPresession,700);
+}
+init();
+</script>
+</body>
+</html>
